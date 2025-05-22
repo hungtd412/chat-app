@@ -33,11 +33,11 @@ public class User extends BaseEntity {
     @Column(name = "last_name", length = 20, nullable = false)
     String lastName;
 
-    @Column(name = "is_active")
-    Boolean isActive;
+    @Column(name = "is_active", columnDefinition = "boolean default false")
+    Boolean isActive = false;
 
-    @Column(name = "is_blocked")
-    Boolean isBlocked;
+    @Column(name = "is_blocked", columnDefinition = "boolean default false")
+    Boolean isBlocked = false;
 
     @Column(columnDefinition = "TEXT")
     String preferences;

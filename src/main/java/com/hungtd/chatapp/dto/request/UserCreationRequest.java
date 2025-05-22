@@ -27,9 +27,5 @@ public class UserCreationRequest {
     @Size(max = 20)
     String lastName;
 
-    Boolean isActive;
-
-    Boolean isBlocked;
-
     String preferences;
 }

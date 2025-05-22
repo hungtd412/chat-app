@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: chat-app
+  datasource:
+    url: jdbc:mysql://localhost:3306/chat-app
+    username: root
+    password: ""
+  jpa:
+    show-sql: true
+    generate-ddl: true
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.MySQLDialect
+
+server:
+  port: 9000
+
+jwt:
+  signerKey: HXcEb0ybPwgpQFbUjkpuuuZSQKIPxiFT7bubYCvuHk7UkbO3Q7/PSTTSzHcmNktm
+fe:
+  url: http://127.0.0.1:5500

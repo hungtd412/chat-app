@@ -3,6 +3,7 @@ package com.hungtd.chatapp.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import java.util.Set;
 
 @Entity
 @Getter
@@ -18,13 +19,13 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
 
-    @Column(length = 16, nullable = false, unique = true)
-    String phone;
-
     @Column(length = 255, nullable = false, unique = true)
     String email;
 
-    @Column(length = 40, nullable = false)
+    @Column(length = 16, nullable = false, unique = true)
+    String username;
+
+    @Column(length = 255, nullable = false)
     String password;
 
     @Column(name = "first_name", length = 20, nullable = false)
@@ -41,4 +42,8 @@ public class User extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     String preferences;
+
+//    @Transient //not map this attribute to table
+    @Column(name = "roles")
+    Set<String> roles;
 }

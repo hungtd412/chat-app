@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-//@ResponseBody convert java object to json object
+//@RestController = @Controller + @ResponseBody convert java object to json object
 @RequiredArgsConstructor
 @RequestMapping("/users")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)

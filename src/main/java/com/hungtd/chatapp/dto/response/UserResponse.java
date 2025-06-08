@@ -10,11 +10,12 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserResponse {
     String id;
-    String phone;
+    String username;
     String email;
     String firstName;
     String lastName;
     Boolean isActive;
     Boolean isBlocked;
     String preferences;
+
 }

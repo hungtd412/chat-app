@@ -12,7 +12,7 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserCreationRequest {
     @Size(max = 16)
-    String phone;
+    String username;
 
     @Size(max = 255)
     String email;

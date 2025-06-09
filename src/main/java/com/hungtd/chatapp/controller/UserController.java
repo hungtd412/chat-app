@@ -5,11 +5,13 @@ import com.hungtd.chatapp.dto.request.UserUpdateRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.UserResponse;
 import com.hungtd.chatapp.entity.User;
+import com.hungtd.chatapp.mapper.UserMapper;
 import com.hungtd.chatapp.service.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,9 +21,11 @@ import java.util.List;
 @RequiredArgsConstructor
 @RequestMapping("/users")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class UserController {
 
     UserService userService;
+    UserMapper userMapper;
 
     /*
     @RequestBody converts json object to UserCreationRequest
@@ -29,32 +33,56 @@ public class UserController {
         in UserCreationRequest class
      */
     @PostMapping
-    public ApiResponse<User> createUser(@RequestBody @Valid UserCreationRequest userCreationRequest) {
-        ApiResponse<User> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(userService.createUser(userCreationRequest));
-        apiResponse.setCode(1001);
-        return apiResponse;
+    public ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest userCreationRequest) {
+        User user = userService.createUser(userCreationRequest);
+
+        return new ApiResponse<UserResponse>()
+                .buildSuccessfulApiResponse(
+                        201,
+                        userMapper.toUserResponse(user));
     }
 
     @GetMapping
-    public List<User> getAll() {
-        return userService.getAll();
+    public ApiResponse<List<UserResponse>> getAll() {
+        List<User> userList = userService.getAll();
+        return new ApiResponse<List<UserResponse>>().buildSuccessfulApiResponse(
+                200,
+                userList.stream()
+                        .map(userMapper::toUserResponse)
+                        .toList());
     }
 
+    @GetMapping("/profile")
+    public ApiResponse<UserResponse> profile() {
+        User user = userService.profile();
+        return new ApiResponse<UserResponse>()
+                .buildSuccessfulApiResponse(
+                        200,
+                        userMapper.toUserResponse(user));
+    }
 
     @GetMapping("/{id}")
-    public UserResponse get(@PathVariable("id") String id) {
-        return userService.getUser(id);
+    public ApiResponse<UserResponse> get(@PathVariable("id") String id) {
+        User user = userService.getUser(id);
+        return new ApiResponse<UserResponse>()
+                .buildSuccessfulApiResponse(
+                        200,
+                        userMapper.toUserResponse(user));
     }
 
     @PutMapping("/{id}")
-    public UserResponse updateUser(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
-        return userService.updateUser(id, userUpdateRequest);
+    public ApiResponse<UserResponse> updateUser(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
+        User user = userService.updateUser(id, userUpdateRequest);
+
+        return new ApiResponse<UserResponse>()
+                .buildSuccessfulApiResponse(
+                        200,
+                        userMapper.toUserResponse(user));
     }
 
     @DeleteMapping("/{id}")
-    public String deleteUser(@PathVariable("id") String id) {
+    public ApiResponse<Object> deleteUser(@PathVariable("id") String id) {
         userService.deleteUser(id);
-        return "Delete success";
+        return new ApiResponse<Object>().buildSuccessfulApiResponse(200, new Object());
     }
 }

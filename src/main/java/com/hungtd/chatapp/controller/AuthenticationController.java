@@ -23,17 +23,22 @@ public class AuthenticationController {
 
     @PostMapping("/log-in")
     public ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
-        var result = authenticationService.authenticate(request);
-        return ApiResponse.<AuthenticationResponse>builder()
-                .result(result)
-                .build();
+        AuthenticationResponse result = authenticationService.authenticate(request);
+
+        if (result.isAuthenticated()) {
+            return new ApiResponse<AuthenticationResponse>()
+                    .buildSuccessfulApiResponse(200, result);
+        }
+
+        return new ApiResponse<AuthenticationResponse>()
+                .buildSuccessfulApiResponse(401, result);
     }
 
     @PostMapping("/introspect")
     public ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request) {
         var result = authenticationService.introspect(request);
         return ApiResponse.<IntrospectResponse>builder()
-                .result(result)
+                .data(result)
                 .build();
     }
 }

@@ -6,7 +6,7 @@ import com.hungtd.chatapp.dto.response.AuthenticationResponse;
 import com.hungtd.chatapp.dto.response.IntrospectResponse;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.exception.AppException;
-import com.hungtd.chatapp.exception.ErrorCode;
+import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.repository.UserRepository;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -66,13 +66,13 @@ public class AuthenticationService {
 
     public AuthenticationResponse authenticate(AuthenticationRequest authenticationRequest) {
         var user = userRepository.findByUsername(authenticationRequest.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+                .orElseThrow(() -> new AppException(404, ErrorCode.USER_NOT_EXISTED));
 
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         boolean authenticated = passwordEncoder.matches(authenticationRequest.getPassword(), user.getPassword());
 
         if (!authenticated) {
-            throw new AppException(ErrorCode.UNAUTHENTICATED);
+            throw new AppException(401, ErrorCode.UNAUTHENTICATED);
         }
         String token = generateToken(user);
 

@@ -1,24 +1,27 @@
 package com.hungtd.chatapp.exception;
 
 import com.hungtd.chatapp.dto.response.ApiResponse;
+import com.hungtd.chatapp.enums.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
+import java.util.Objects;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
     @ExceptionHandler(value = Exception.class)
-    ResponseEntity<ApiResponse<String>> handlingGeneralException(RuntimeException exception) {
-        ApiResponse<String> apiResponse = new ApiResponse<>();
-        apiResponse.setCode(ErrorCode.UNCATEGORIZED_EXCEPTION.getCode());
-        apiResponse.setMessage(ErrorCode.UNCATEGORIZED_EXCEPTION.getMessage());
-        return ResponseEntity.badRequest().body(apiResponse);
+    ResponseEntity<ApiResponse<Object>> handlingGeneralException(RuntimeException exception) {
+        ApiResponse<Object> apiResponse = new ApiResponse<>().buildFailedApiResponse(400, ErrorCode.UNCATEGORIZED_EXCEPTION);
+        return ResponseEntity.status(apiResponse.getStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = MethodArgumentNotValidException.class)
-    ResponseEntity<ApiResponse<String>> handlingValidation(MethodArgumentNotValidException exception) {
-        String enumKey = exception.getFieldError().getDefaultMessage();
+    ResponseEntity<ApiResponse<Object>> handlingValidation(MethodArgumentNotValidException exception) {
+        String enumKey = Objects.requireNonNull(exception.getFieldError()).getDefaultMessage();
 
         ErrorCode errorCode = ErrorCode.INVALID_KEY;
         try {
@@ -27,25 +30,27 @@ public class GlobalExceptionHandler {
 
         }
 
-        ApiResponse<String> apiResponse = createApiResponseFromErrorCode(errorCode);
+        ApiResponse<Object> apiResponse = new ApiResponse<>().buildFailedApiResponse(400,
+                errorCode);
 
-        return ResponseEntity.badRequest().body(apiResponse);
+        return ResponseEntity.status(apiResponse.getStatus()).body(apiResponse);
     }
 
     @ExceptionHandler(value = AppException.class)
-    ResponseEntity<ApiResponse<String>> handlingAppException(AppException exception) {
-        ErrorCode errorCode = exception.getErrorCode();
+    ResponseEntity<ApiResponse<Object>> handlingAppException(AppException appException) {
 
-        ApiResponse<String> apiResponse = createApiResponseFromErrorCode(errorCode);
-
-        return ResponseEntity.badRequest().body(apiResponse);
+        ApiResponse<Object> apiResponse = createApiResponseFromAppException(appException);
+        return ResponseEntity.status(apiResponse.getStatus()).body(apiResponse);
     }
 
-    private ApiResponse<String> createApiResponseFromErrorCode(ErrorCode errorCode) {
-        ApiResponse<String> apiResponse = new ApiResponse<>();
-        apiResponse.setResult(errorCode.getMessage());
-        apiResponse.setCode(errorCode.getCode());
+//    @ExceptionHandler(AccessDeniedException.class)
+//    public ResponseEntity<ApiResponse<Object>> handleAccessDeniedException(AccessDeniedException ex) {
+//        ApiResponse<Object> apiResponse = new ApiResponse<>().buildFailedApiResponse(400, ErrorCode.FORBIDDEN);
+//        return ResponseEntity.badRequest().body(apiResponse);
+//    }
 
-        return apiResponse;
+    private ApiResponse<Object> createApiResponseFromAppException(AppException appException) {
+        return new ApiResponse<>().buildFailedApiResponse(appException.getStatusCode(),
+                appException.getErrorCode());
     }
 }

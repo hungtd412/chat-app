@@ -3,6 +3,7 @@ package com.hungtd.chatapp.controller;
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
 import com.hungtd.chatapp.dto.request.UserUpdateRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
+import com.hungtd.chatapp.dto.response.IntrospectResponse;
 import com.hungtd.chatapp.dto.response.UserResponse;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.UserMapper;
@@ -12,6 +13,8 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,56 +36,72 @@ public class UserController {
         in UserCreationRequest class
      */
     @PostMapping
-    public ApiResponse<UserResponse> createUser(@RequestBody @Valid UserCreationRequest userCreationRequest) {
+    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody @Valid UserCreationRequest userCreationRequest) {
         User user = userService.createUser(userCreationRequest);
 
-        return new ApiResponse<UserResponse>()
-                .buildSuccessfulApiResponse(
-                        201,
-                        userMapper.toUserResponse(user));
+        return ResponseEntity.status(201).body(
+                ApiResponse.<UserResponse>builder()
+                        .data(userMapper.toUserResponse(user))
+                        .build()
+        );
     }
 
     @GetMapping
-    public ApiResponse<List<UserResponse>> getAll() {
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<List<UserResponse>>> getAll() {
         List<User> userList = userService.getAll();
-        return new ApiResponse<List<UserResponse>>().buildSuccessfulApiResponse(
-                200,
-                userList.stream()
-                        .map(userMapper::toUserResponse)
-                        .toList());
+
+        List<UserResponse> userResponseList = userList.stream()
+                .map(userMapper::toUserResponse)
+                .toList();
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<List<UserResponse>>builder()
+                        .data(userResponseList)
+                        .build()
+        );
     }
 
     @GetMapping("/profile")
-    public ApiResponse<UserResponse> profile() {
+    public ResponseEntity<ApiResponse<UserResponse>> profile() {
         User user = userService.profile();
-        return new ApiResponse<UserResponse>()
-                .buildSuccessfulApiResponse(
-                        200,
-                        userMapper.toUserResponse(user));
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<UserResponse>builder()
+                        .data(userMapper.toUserResponse(user))
+                        .build()
+        );
     }
 
     @GetMapping("/{id}")
-    public ApiResponse<UserResponse> get(@PathVariable("id") String id) {
+    public ResponseEntity<ApiResponse<UserResponse>> get(@PathVariable("id") String id) {
         User user = userService.getUser(id);
-        return new ApiResponse<UserResponse>()
-                .buildSuccessfulApiResponse(
-                        200,
-                        userMapper.toUserResponse(user));
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<UserResponse>builder()
+                        .data(userMapper.toUserResponse(user))
+                        .build()
+        );
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<UserResponse> updateUser(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
+    public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
         User user = userService.updateUser(id, userUpdateRequest);
 
-        return new ApiResponse<UserResponse>()
-                .buildSuccessfulApiResponse(
-                        200,
-                        userMapper.toUserResponse(user));
+        return ResponseEntity.status(200).body(
+                ApiResponse.<UserResponse>builder()
+                        .data(userMapper.toUserResponse(user))
+                        .build()
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ApiResponse<Object> deleteUser(@PathVariable("id") String id) {
+    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable("id") String id) {
         userService.deleteUser(id);
-        return new ApiResponse<Object>().buildSuccessfulApiResponse(200, new Object());
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<Void>builder()
+                        .build()
+        );
     }
 }

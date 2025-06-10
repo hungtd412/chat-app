@@ -35,11 +35,11 @@ public class UserService {
     public User createUser(UserCreationRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new AppException(404, ErrorCode.USER_EXISTED);
+            throw new AppException(ErrorCode.EMAIL_EXISTED);
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new AppException(409, ErrorCode.USER_EXISTED);
+            throw new AppException(ErrorCode.USERNAME_EXISTED);
         }
 
         User user = userMapper.toUser(request);
@@ -65,7 +65,7 @@ public class UserService {
 
 
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(404, ErrorCode.USER_NOT_EXISTED)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
 
         return user;
@@ -74,13 +74,13 @@ public class UserService {
     @PostAuthorize("returnObject.getUsername() == authentication.getName() or hasRole(\"ADMIN\")")
     public User getUser(String id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new AppException(404, ErrorCode.USER_NOT_EXISTED)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
     }
 
     public User updateUser(String id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found!!")
+                .orElseThrow(() ->new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
         userMapper.updateUser(user, request);
 
@@ -89,7 +89,7 @@ public class UserService {
 
     public void deleteUser(String id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new AppException(404, ErrorCode.USER_NOT_EXISTED)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
         userRepository.deleteById(user.getId());
     }

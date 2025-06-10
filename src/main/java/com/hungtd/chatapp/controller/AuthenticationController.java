@@ -9,6 +9,7 @@ import com.hungtd.chatapp.dto.response.AuthenticationResponse;
 import com.hungtd.chatapp.dto.response.IntrospectResponse;
 import com.hungtd.chatapp.service.auth.AuthenticationService;
 import com.nimbusds.jose.JOSEException;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -58,7 +59,7 @@ public class AuthenticationController {
     }
     
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<AuthenticationResponse>> refresh(@RequestBody RefreshTokenRequest request) throws ParseException, JOSEException {
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> refresh(@RequestBody @Valid RefreshTokenRequest request) {
         AuthenticationResponse authenticationResponse = authenticationService.refreshToken(request);
 
         return ResponseEntity.status(200).body(
@@ -69,7 +70,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/log-out")
-    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody @Valid LogoutRequest request) {
         authenticationService.logout(request);
 
         return ResponseEntity.status(200).body(

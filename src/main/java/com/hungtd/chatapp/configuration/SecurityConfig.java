@@ -43,9 +43,6 @@ public class SecurityConfig {
             "/users"
     };
 
-    @Value("${jwt.signerKey}")
-    private String signerKey;
-
     @Autowired
     CustomJwtDecoder customJwtDecoder;
 

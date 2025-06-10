@@ -68,17 +68,41 @@ public class AuthenticationService {
     }
 
     public void logout(LogoutRequest request) {
-        String token = request.getToken();
+        String accessToken = request.getAccessToken();
+        String refreshToken = request.getRefreshToken();
 
         try {
-            // Validate the token is correctly formatted
-            jwtService.verifyToken(token);
+            // Blacklist access token if provided
+            if (accessToken != null && !accessToken.isEmpty()) {
+                try {
+                    // Don't verify against blacklist - just get expiration time
+                    Long accessTokenExpiryMs = jwtService.getTokenExpirationTime(accessToken);
+                    if (accessTokenExpiryMs != null) {
+                        // Blacklist the access token
+                        tokenBlacklistService.blacklistToken(accessToken, accessTokenExpiryMs);
+                        log.info("Access token blacklisted successfully");
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not blacklist access token: {}", e.getMessage());
+                }
+            }
 
-            // Get token expiry time directly from JWT service
-            Long expiryTimeMs = jwtService.getTokenExpirationTime(token);
-            tokenBlacklistService.blacklistToken(token, expiryTimeMs);
+            // Blacklist refresh token if provided
+            if (refreshToken != null && !refreshToken.isEmpty()) {
+                try {
+                    // Get expiration time for refresh token
+                    Long refreshTokenExpiryMs = jwtService.getTokenExpirationTime(refreshToken);
+                    if (refreshTokenExpiryMs != null) {
+                        // Blacklist the refresh token
+                        tokenBlacklistService.blacklistToken(refreshToken, refreshTokenExpiryMs);
+                        log.info("Refresh token blacklisted successfully");
+                    }
+                } catch (Exception e) {
+                    log.warn("Could not blacklist refresh token: {}", e.getMessage());
+                }
+            }
         } catch (Exception e) {
-            log.warn("Invalid token provided for logout: {}", e.getMessage());
+            log.warn("Error during logout: {}", e.getMessage());
         }
     }
 

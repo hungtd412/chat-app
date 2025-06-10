@@ -9,12 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @Slf4j
 public class AppException extends RuntimeException {
-    private int statusCode; //200
     private ErrorCode errorCode;
 
-    public AppException( int statusCode, ErrorCode errorCode) {
+    public AppException(ErrorCode errorCode) {
         super(errorCode.getMessage());
-        this.statusCode = statusCode;
         this.errorCode = errorCode;
     }
 }

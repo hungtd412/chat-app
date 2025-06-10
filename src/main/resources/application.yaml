@@ -1,21 +1,27 @@
 spring:
   application:
-    name: chat-app
+    name: chat-app                              # Name of the application
   datasource:
-    url: jdbc:mysql://localhost:3306/chat-app
-    username: root
-    password: ""
+    url: jdbc:mysql://localhost:3306/chat-app   # MySQL database connection URL
+    username: root                              # Database username
+    password: ""                                # Database password (empty in this case)
   jpa:
-    show-sql: true
-    generate-ddl: true
+    show-sql: true                              # Show SQL queries in logs
+    generate-ddl: true                          # Enable DDL generation
     hibernate:
-      ddl-auto: update
-    database-platform: org.hibernate.dialect.MySQLDialect
+      ddl-auto: update                          # Update schema automatically
+    database-platform: org.hibernate.dialect.MySQLDialect  # Specify MySQL dialect
+  data:                                         # Spring Data configuration section
+    redis:                                      # Redis configuration (now properly nested under spring)
+      host: localhost                           # Redis server host
+      port: 6379                                # Redis server port
+      # password: yourpassword                  # Uncomment and set if Redis requires authentication
 
 server:
-  port: 9000
+  port: 9000                                    # Application server port
 
 jwt:
-  signerKey: HXcEb0ybPwgpQFbUjkpuuuZSQKIPxiFT7bubYCvuHk7UkbO3Q7/PSTTSzHcmNktm
+  signerKey: HXcEb0ybPwgpQFbUjkpuuuZSQKIPxiFT7bubYCvuHk7UkbO3Q7/PSTTSzHcmNktm  # Secret key for JWT signing
+
 fe:
-  url: http://127.0.0.1:5500
+  url: http://127.0.0.1:5500                    # Frontend URL for CORS configuration

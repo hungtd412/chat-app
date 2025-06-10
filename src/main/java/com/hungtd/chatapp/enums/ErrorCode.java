@@ -18,6 +18,10 @@ public enum ErrorCode {
     INVALID_KEY(9000, "Token không hợp lệ!", 400),
     UNAUTHENTICATED(9001, "Người dùng chưa xác thực!", 401),
     UNAUTHORIZED(9002, "Bạn không có quyền truy cập vào tài nguyên này!", 403),
+    SESSION_EXPIRED(9003, "Phiên đăng nhập hiện tại đã hết hạn, vui lòng đăng nhập lại!", 403),
+    INVALID_TOKEN_TYPE(9004, "Loại token không hợp lệ cho thao tác này!", 401),
+    EMPTY_REFRESHTOKEN(9005, "Refresh token không được để trống!", 400),
+    EMPTY_ACCESSTOKEN(9006, "Access token không được để trống!", 400),
 
     //EMAIL 100X
     EMAIL_EXISTED(1000, "Email đã tồn tại!", 409),
@@ -55,4 +59,3 @@ public enum ErrorCode {
     String message;
     int httpStatusCode;
 }
-

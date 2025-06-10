@@ -33,25 +33,39 @@ public class JwtService {
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
 
+    // Constants for token types
+    private static final String TOKEN_TYPE_CLAIM = "token_type";
+    private static final String ACCESS_TOKEN = "access";
+    private static final String REFRESH_TOKEN = "refresh";
+
     TokenBlacklistService tokenBlacklistService;
 
+    // Generate an access token with short expiration (1 hour)
+    public String generateAccessToken(User user) {
+        return generateJwtToken(user, ACCESS_TOKEN, 1, ChronoUnit.HOURS);
+    }
 
-    public String generateToken(User user) {
+    // Generate a refresh token with longer expiration (7 days)
+    public String generateRefreshToken(User user) {
+        return generateJwtToken(user, REFRESH_TOKEN, 7, ChronoUnit.DAYS);
+    }
+
+    // Common method to generate tokens with different types and expiration times
+    private String generateJwtToken(User user, String tokenType, long amount, ChronoUnit unit) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
                 .subject(user.getUsername())
                 .issuer("hung")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(1, ChronoUnit.HOURS).toEpochMilli()
+                        Instant.now().plus(amount, unit).toEpochMilli()
                 ))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
+                .claim(TOKEN_TYPE_CLAIM, tokenType) // Add token type claim
                 .build();
 
         Payload payload = new Payload(jwtClaimsSet.toJSONObject());
-
-        //may take 2 pams: header for hash algo, payload for username
         JWSObject jwsObject = new JWSObject(jwsHeader, payload);
 
         try {
@@ -61,26 +75,14 @@ public class JwtService {
             log.error("Cannot create token", e);
             throw new RuntimeException(e);
         }
-
     }
 
-    private String buildScope(User user) {
-        StringJoiner rolesStringJoiner = new StringJoiner(" ");
-
-        if (!CollectionUtils.isEmpty(user.getRoles()))
-            user.getRoles().forEach(rolesStringJoiner::add);
-
-        return rolesStringJoiner.toString();
-    }
-
+    // Verify any token (access or refresh)
     public SignedJWT verifyToken(String token) throws RuntimeException {
         try {
             JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-
             SignedJWT signedJWT = SignedJWT.parse(token);
-
             boolean verified = signedJWT.verify(verifier);
-
             Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
 
             if (!(verified && expiryTime.after(new Date()))) {
@@ -97,6 +99,30 @@ public class JwtService {
         }
     }
 
+    // Specifically verify a refresh token
+    public SignedJWT verifyRefreshToken(String token) throws RuntimeException {
+        try {
+            // Step 1: First validate this is a valid token (checks signature, expiration, and blacklist status)
+            SignedJWT signedJWT = verifyToken(token);
+            
+            // Step 2: Extract the token type claim from the JWT payload
+            String tokenType = (String) signedJWT.getJWTClaimsSet().getClaim(TOKEN_TYPE_CLAIM);
+            
+            // Step 3: Verify this is specifically a refresh token, not an access token
+            if (!REFRESH_TOKEN.equals(tokenType)) {
+                // If token type is not "refresh", throw an exception - prevents using access tokens for refresh operations
+                throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
+            }
+            
+            // Step 4: Return the validated refresh token for further processing
+            return signedJWT;
+        } catch (ParseException e) {
+            // Handle parsing errors (malformed JWT)
+            throw new RuntimeException(e);
+        }
+    }
+
+    // Get token expiration time
     public Long getTokenExpirationTime(String token) {
         try {
             SignedJWT signedJWT = SignedJWT.parse(token);
@@ -106,5 +132,15 @@ public class JwtService {
             log.error("Error parsing JWT token: {}", e.getMessage());
             return null;
         }
+    }
+
+    // Build scopes from user roles
+    private String buildScope(User user) {
+        StringJoiner rolesStringJoiner = new StringJoiner(" ");
+
+        if (!CollectionUtils.isEmpty(user.getRoles()))
+            user.getRoles().forEach(rolesStringJoiner::add);
+
+        return rolesStringJoiner.toString();
     }
 }

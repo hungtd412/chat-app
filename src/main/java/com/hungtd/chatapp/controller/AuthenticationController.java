@@ -3,10 +3,12 @@ package com.hungtd.chatapp.controller;
 import com.hungtd.chatapp.dto.request.AuthenticationRequest;
 import com.hungtd.chatapp.dto.request.IntrospectRequest;
 import com.hungtd.chatapp.dto.request.LogoutRequest;
+import com.hungtd.chatapp.dto.request.RefreshTokenRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.AuthenticationResponse;
 import com.hungtd.chatapp.dto.response.IntrospectResponse;
 import com.hungtd.chatapp.service.auth.AuthenticationService;
+import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.text.ParseException;
 
 @RestController
 @RequestMapping("/auth")
@@ -43,7 +47,7 @@ public class AuthenticationController {
     }
 
     @PostMapping("/introspect")
-    public ResponseEntity<ApiResponse<IntrospectResponse>> authenticate(@RequestBody IntrospectRequest request) {
+    public ResponseEntity<ApiResponse<IntrospectResponse>> introspect(@RequestBody IntrospectRequest request) throws ParseException, JOSEException {
         var result = authenticationService.introspect(request);
 
         return ResponseEntity.status(200).body(
@@ -53,12 +57,24 @@ public class AuthenticationController {
         );
     }
     
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> refresh(@RequestBody RefreshTokenRequest request) throws ParseException, JOSEException {
+        AuthenticationResponse authenticationResponse = authenticationService.refreshToken(request);
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<AuthenticationResponse>builder()
+                        .data(authenticationResponse)
+                        .build()
+        );
+    }
+
     @PostMapping("/log-out")
     public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request) {
         authenticationService.logout(request);
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<Void>builder()
+                        .message("Đăng xuất thành công!")
                         .build()
         );
     }

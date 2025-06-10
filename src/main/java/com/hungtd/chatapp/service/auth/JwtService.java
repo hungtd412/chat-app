@@ -31,7 +31,7 @@ import java.util.UUID;
 public class JwtService {
     @NonFinal
     @Value("${jwt.signerKey}")
-    protected String SIGNER_KEY;
+    private String SIGNER_KEY;
 
     TokenBlacklistService tokenBlacklistService;
 
@@ -75,10 +75,6 @@ public class JwtService {
 
     public SignedJWT verifyToken(String token) throws RuntimeException {
         try {
-            if (tokenBlacklistService.isBlacklisted(token)) {
-                throw new AppException(ErrorCode.UNAUTHENTICATED);
-            }
-            
             JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
 
             SignedJWT signedJWT = SignedJWT.parse(token);
@@ -89,6 +85,10 @@ public class JwtService {
 
             if (!(verified && expiryTime.after(new Date()))) {
                 throw new AppException(ErrorCode.INVALID_KEY);
+            }
+
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
             }
 
             return signedJWT;

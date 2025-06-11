@@ -1,6 +1,7 @@
 package com.hungtd.chatapp.dto.request;
 
 import com.hungtd.chatapp.validator.dob.DobConstraint;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -21,7 +22,7 @@ public class UserCreationRequest {
     String username;
 
     @NotBlank(message = "EMPTY_EMAIL")
-    @Size(max = 50, message = "EMAIL_EXISTED")
+    @Email(message = "INVALID_EMAIL")
     String email;
 
     @Size(min = 3, message = "MIN_PASSWORD_LENGTH")

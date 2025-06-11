@@ -25,6 +25,7 @@ public enum ErrorCode {
 
     //EMAIL 100X
     EMAIL_EXISTED(1000, "Email đã tồn tại!", 409),
+    INVALID_EMAIL(1013, "Email không hợp lệ!", 400),
     EMPTY_EMAIL(1001, "Email không được để trống!", 400),
 
     //USERNAME 101X

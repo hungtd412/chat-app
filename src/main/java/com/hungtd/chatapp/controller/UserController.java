@@ -3,11 +3,10 @@ package com.hungtd.chatapp.controller;
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
 import com.hungtd.chatapp.dto.request.UserUpdateRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
-import com.hungtd.chatapp.dto.response.IntrospectResponse;
 import com.hungtd.chatapp.dto.response.UserResponse;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.UserMapper;
-import com.hungtd.chatapp.service.UserService;
+import com.hungtd.chatapp.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -36,8 +35,8 @@ public class UserController {
         in UserCreationRequest class
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<UserResponse>> createUser(@RequestBody @Valid UserCreationRequest userCreationRequest) {
-        User user = userService.createUser(userCreationRequest);
+    public ResponseEntity<ApiResponse<UserResponse>> create(@RequestBody @Valid UserCreationRequest userCreationRequest) {
+        User user = userService.create(userCreationRequest);
 
         return ResponseEntity.status(201).body(
                 ApiResponse.<UserResponse>builder()
@@ -75,7 +74,7 @@ public class UserController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<UserResponse>> get(@PathVariable("id") String id) {
-        User user = userService.getUser(id);
+        User user = userService.get(id);
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<UserResponse>builder()
@@ -85,8 +84,8 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserResponse>> updateUser(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
-        User user = userService.updateUser(id, userUpdateRequest);
+    public ResponseEntity<ApiResponse<UserResponse>> update(@PathVariable("id") String id, @RequestBody UserUpdateRequest userUpdateRequest) {
+        User user = userService.update(id, userUpdateRequest);
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<UserResponse>builder()
@@ -96,8 +95,8 @@ public class UserController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> deleteUser(@PathVariable("id") String id) {
-        userService.deleteUser(id);
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") String id) {
+        userService.delete(id);
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<Void>builder()

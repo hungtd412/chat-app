@@ -16,12 +16,10 @@ import java.time.LocalDateTime;
 @Table(name = "messages")
 public class Message extends BaseEntity {
     @Id
-    @Column(length = 36, name = "id", updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    String id;
+    @Column(name = "id", updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(length = 100)
-    String guid;
 
     @Column(name = "conversation_id", length = 36)
     String conversationId;
@@ -40,6 +38,6 @@ public class Message extends BaseEntity {
     LocalDateTime deletedAt;
 
     public enum Type {
-        TYPE1, TYPE2
+        TYPE1, TYPE2, TYPE3, TYPE4
     }
 }

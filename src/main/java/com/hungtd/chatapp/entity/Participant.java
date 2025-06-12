@@ -12,23 +12,30 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "participants")
-public class Participant extends BaseEntity {
-    @Id
-    @Column(length = 36, name = "id", updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    String id;
+@IdClass(ParticipantId.class)
+public class Participant {
 
-    @Column(name = "conversation_id", length = 36)
+    @Id
+    @Column(name = "conversation_id")
     String conversationId;
 
-    @Column(name = "users_id", length = 36)
-    String usersId;
+    @Id
+    @Column(name = "user_id")
+    String userId;
+    
+    @ManyToOne
+    @JoinColumn(name = "conversation_id", referencedColumnName = "id", insertable = false, updatable = false)
+    Conversation conversation;
+    
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id", insertable = false, updatable = false)
+    User user;
 
     @Enumerated(EnumType.STRING)
     @Column(length = 10)
     Type type;
 
     public enum Type {
-        TYPE1, TYPE2
+        ADMIN, MEMBER
     }
 }

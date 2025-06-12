@@ -17,11 +17,11 @@ public class Participant {
 
     @Id
     @Column(name = "conversation_id")
-    String conversationId;
+    Long conversationId;
 
     @Id
     @Column(name = "user_id")
-    String userId;
+    Long userId;
     
     @ManyToOne
     @JoinColumn(name = "conversation_id", referencedColumnName = "id", insertable = false, updatable = false)

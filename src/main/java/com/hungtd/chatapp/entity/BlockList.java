@@ -16,13 +16,13 @@ import lombok.experimental.FieldDefaults;
 })
 public class BlockList extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(length = 36, name = "id", updatable = false)
-    String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false)
+    Long id;
 
-    @Column(name = "blocker_id", length = 36, nullable = false)
-    String blockerId;
+    @Column(name = "blocker_id", nullable = false)
+    Long blockerId;
 
-    @Column(name = "blocked_id", length = 36, nullable = false)
-    String blockedId;
+    @Column(name = "blocked_id", nullable = false)
+    Long blockedId;
 }

@@ -14,12 +14,12 @@ import lombok.experimental.FieldDefaults;
 @Table(name = "attachments")
 public class Attachment extends BaseEntity {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id", updatable = false)
-    String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
     @Column(name = "messages_id")
-    String messagesId;
+    Long messagesId;
 
     @Column(name = "thumb_url", length = 45)
     String thumbUrl;

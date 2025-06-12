@@ -53,7 +53,14 @@ public enum ErrorCode {
     MIN_PASSWORD_LENGTH(1051, "Mật khẩu phải có ít nhất 3 ký tự!", 400),
 
     //USER 106X
-    USER_NOT_EXISTED(1060, "Người dùng không tồn tại!", 404)
+    USER_NOT_EXISTED(1060, "Người dùng không tồn tại!", 404),
+    
+    //FRIEND REQUEST 107X
+    CANNOT_SEND_FRIEND_REQUEST_TO_SELF(1070, "Không thể gửi lời mời kết bạn cho chính mình!", 400),
+    FRIEND_REQUEST_ALREADY_SENT(1071, "Đã gửi lời mời kết bạn cho người dùng này!", 400),
+    FRIEND_REQUEST_ALREADY_RECEIVED(1072, "Bạn đã nhận được lời mời kết bạn từ người dùng này!", 400),
+    FRIEND_REQUEST_NOT_FOUND(1073, "Không tìm thấy lời mời kết bạn!", 404),
+    FRIEND_REQUEST_ALREADY_PROCESSED(1074, "Lời mời kết bạn đã được xử lý!", 400)
     ;
 
     int code;

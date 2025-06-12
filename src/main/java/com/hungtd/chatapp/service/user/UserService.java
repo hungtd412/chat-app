@@ -13,9 +13,9 @@ public interface UserService {
 
     User profile();
 
-    User get(String id);
+    User get(Long id);
 
-    User update(String id, UserUpdateRequest request);
+    User update(Long id, UserUpdateRequest request);
 
-    void delete(String id);
+    void delete(Long id);
 }

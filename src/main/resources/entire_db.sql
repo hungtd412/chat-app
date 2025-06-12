@@ -50,7 +50,7 @@ CREATE TABLE participants
     type            ENUM('TYPE1', 'TYPE2'),
     created_at      DATETIME,
     updated_at      DATETIME,
-    FOREIGN KEY (conversation_id) REFERENCES conversation (id),
+    FOREIGN KEY (conversation_id) REFERENCES conversations (id),
     FOREIGN KEY (users_id) REFERENCES users (id)
 );
 
@@ -64,7 +64,7 @@ CREATE TABLE messages
     message         VARCHAR(255),
     created_at      DATETIME,
     deleted_at      DATETIME,
-    FOREIGN KEY (conversation_id) REFERENCES conversation (id),
+    FOREIGN KEY (conversation_id) REFERENCES conversations (id),
     FOREIGN KEY (sender_id) REFERENCES users (id)
 );
 

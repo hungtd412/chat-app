@@ -13,11 +13,13 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 @Configuration
-@RequiredArgsConstructor //autowire non-null(@NonNull) and final field
+@RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
 public class AppInitConfig {
@@ -27,6 +29,7 @@ public class AppInitConfig {
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository) {
         return args -> {
+            // Create admin user if not exists
             if (userRepository.findByUsername("admin").isEmpty()) {
                 User user = User.builder()
                         .email("admin@gm.con")
@@ -39,6 +42,65 @@ public class AppInitConfig {
 
                 userRepository.save(user);
                 log.warn("default admin created with admin/123");
+            }
+            
+            // Create 5 default users if no regular users exist
+            if (userRepository.count() <= 1) { // Only admin exists or no users
+                List<User> defaultUsers = List.of(
+                    User.builder()
+                        .email("hung@example.com")
+                        .username("hung")
+                        .password(passwordEncoder.encode("123"))
+                        .firstName("Hung")
+                        .lastName("Nguyen")
+                        .dob(LocalDate.of(1990, 1, 15))
+                        .isActive(true)
+                        .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))
+                        .build(),
+                    User.builder()
+                        .email("trang@example.com")
+                        .username("trang")
+                        .password(passwordEncoder.encode("123"))
+                        .firstName("Trang")
+                        .lastName("Le")
+                        .dob(LocalDate.of(1992, 5, 20))
+                        .isActive(true)
+                        .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))
+                        .build(),
+                    User.builder()
+                        .email("thuy@example.com")
+                        .username("thuy")
+                        .password(passwordEncoder.encode("123"))
+                        .firstName("Thuy")
+                        .lastName("Pham")
+                        .dob(LocalDate.of(1988, 9, 10))
+                        .isActive(true)
+                        .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))
+                        .build(),
+                    User.builder()
+                        .email("vinh@example.com")
+                        .username("vinh")
+                        .password(passwordEncoder.encode("123"))
+                        .firstName("Vinh")
+                        .lastName("Tran")
+                        .dob(LocalDate.of(1995, 3, 25))
+                        .isActive(true)
+                        .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))
+                        .build(),
+                    User.builder()
+                        .email("nam@example.com")
+                        .username("nam")
+                        .password(passwordEncoder.encode("123"))
+                        .firstName("Nam")
+                        .lastName("Hoang")
+                        .dob(LocalDate.of(1991, 7, 8))
+                        .isActive(true)
+                        .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))
+                        .build()
+                );
+                
+                userRepository.saveAll(defaultUsers);
+                log.warn("Created 5 default users: hung, trang, thuy, vinh, nam (all with password '123')");
             }
         };
     }

@@ -16,9 +16,9 @@ import java.util.Set;
 @Table(name = "users")
 public class User extends BaseEntity {
     @Id
-    @Column(length = 36, name = "id", updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    String id;
+    @Column(name = "id", updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
     @Column(length = 255, nullable = false, unique = true)
     String email;
@@ -47,7 +47,18 @@ public class User extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     String preferences;
 
-//    @Transient //not map this attribute to table
     @Column(name = "roles")
     Set<String> roles;
+
+    @OneToMany(mappedBy = "sender")
+    Set<FriendRequest> sentFriendRequests;
+
+    @OneToMany(mappedBy = "receiver")
+    Set<FriendRequest> receivedFriendRequests;
+    
+    @OneToMany(mappedBy = "user1")
+    Set<Friend> friendsAsUser1;
+    
+    @OneToMany(mappedBy = "user2")
+    Set<Friend> friendsAsUser2;
 }

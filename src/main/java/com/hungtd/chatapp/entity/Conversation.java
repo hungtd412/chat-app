@@ -11,12 +11,12 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "conversation")
+@Table(name = "conversations")
 public class Conversation {
     @Id
-    @Column(length = 36, name = "id", updatable = false)
-    @GeneratedValue(strategy = GenerationType.UUID)
-    String id;
+    @Column(name = "id", updatable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
     @Column(length = 40, nullable = false)
     String title;

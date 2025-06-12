@@ -73,13 +73,13 @@ public class UserServiceImpl implements UserService {
     }
 
     @PostAuthorize("returnObject.getUsername() == authentication.getName() or hasRole(\"ADMIN\")")
-    public User get(String id) {
+    public User get(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
     }
 
-    public User update(String id, UserUpdateRequest request) {
+    public User update(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() ->new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
@@ -88,11 +88,10 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
-    public void delete(String id) {
+    public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
         userRepository.deleteById(user.getId());
     }
-
 }

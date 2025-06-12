@@ -8,7 +8,7 @@ import java.io.Serializable;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode
-public class ParticipantId implements Serializable {
-    private Long conversationId;
-    private Long userId;
+public class FriendId implements Serializable {
+    private Long userId1;
+    private Long userId2;
 }

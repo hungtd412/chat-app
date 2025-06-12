@@ -20,12 +20,11 @@ public class Message extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "conversation_id")
+    Long conversationId;
 
-    @Column(name = "conversation_id", length = 36)
-    String conversationId;
-
-    @Column(name = "sender_id", length = 36)
-    String senderId;
+    @Column(name = "sender_id")
+    Long senderId;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "message_type", length = 10)

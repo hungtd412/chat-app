@@ -12,15 +12,12 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "conversation")
-public class Conversation extends BaseEntity {
+public class Conversation {
     @Id
     @Column(length = 36, name = "id", updatable = false)
     @GeneratedValue(strategy = GenerationType.UUID)
     String id;
 
-    @Column(length = 40)
+    @Column(length = 40, nullable = false)
     String title;
-
-    @Column(name = "creator_id", length = 36)
-    String creatorId;
 }

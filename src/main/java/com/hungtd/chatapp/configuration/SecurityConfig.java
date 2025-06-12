@@ -1,7 +1,6 @@
 package com.hungtd.chatapp.configuration;
 
 import com.hungtd.chatapp.enums.Role;
-import org.apache.tomcat.Jar;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,17 +12,12 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
-import javax.crypto.spec.SecretKeySpec;
 import java.util.Arrays;
 import java.util.List;
 
@@ -40,7 +34,8 @@ public class SecurityConfig {
             "/auth/log-out",
             "/auth/introspect",
             "/auth/refresh",
-            "/users"
+            "/users",
+            "/ws/**"
     };
 
     @Autowired
@@ -51,6 +46,7 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
+                        .requestMatchers(HttpMethod.GET, "/ws/**").permitAll() // Allow WebSocket connections
                         .anyRequest().authenticated() //other requests must be authenticated
         );
 

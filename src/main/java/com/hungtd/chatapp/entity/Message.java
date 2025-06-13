@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor 
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name = "messages")
@@ -20,23 +20,37 @@ public class Message extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "conversation_id")
-    Long conversationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "conversation_id", nullable = false)
+    Conversation conversation;
 
     @Column(name = "sender_id")
     Long senderId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "message_type", length = 10)
-    Type messageType;
+    @Column(name = "type", length = 10)
+    Type type;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     String message;
 
     @Column(name = "deleted_at")
     LocalDateTime deletedAt;
 
     public enum Type {
-        TYPE1, TYPE2, TYPE3, TYPE4
+        TEXT, THUMB, FILE
+    }
+    
+    // For backward compatibility with code using conversationId directly
+    @Transient
+    public Long getConversationId() {
+        return conversation != null ? conversation.getId() : null;
+    }
+    
+    public void setConversationId(Long conversationId) {
+        if (this.conversation == null) {
+            this.conversation = new Conversation();
+        }
+        this.conversation.setId(conversationId);
     }
 }

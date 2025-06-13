@@ -17,6 +17,11 @@ spring:
     redis:
       host: localhost
       port: 6379
+  web:
+    resources:
+      static-locations: classpath:/static/
+  mvc:
+    static-path-pattern: /**
 
 server:
   port: 9000
@@ -25,4 +30,9 @@ jwt:
   signerKey: ${JWT_SIGNER_KEY}
 
 fe:
-  url: http://127.0.0.1:5500
+  url: http://localhost:63342
+
+cloudinary:
+  cloud_name: ${CLOUDINARY_CLOUD_NAME}
+  api_key: ${CLOUDINARY_API_KEY}
+  api_secret: ${CLOUDINARY_API_SECRET}

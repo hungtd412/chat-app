@@ -11,7 +11,7 @@ public interface UserService {
 
     List<User> getAll();
 
-    User profile();
+    User currentUser();
 
     User get(Long id);
 

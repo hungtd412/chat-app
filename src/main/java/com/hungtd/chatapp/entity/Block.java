@@ -11,18 +11,20 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Table(name = "block_list", uniqueConstraints = {
+@Table(name = "block", uniqueConstraints = {
         @UniqueConstraint(columnNames = {"blocker_id", "blocked_id"})
 })
-public class BlockList extends BaseEntity {
+public class Block extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false)
     Long id;
 
-    @Column(name = "blocker_id", nullable = false)
-    Long blockerId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "blocker_id", nullable = false)
+    User blocker;
 
-    @Column(name = "blocked_id", nullable = false)
-    Long blockedId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "blocked_id", nullable = false)
+    User blocked;
 }

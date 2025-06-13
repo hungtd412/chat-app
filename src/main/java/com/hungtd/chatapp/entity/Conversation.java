@@ -18,6 +18,14 @@ public class Conversation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(length = 40, nullable = false)
+    @Column(length = 40)
     String title;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(name = "type", length = 8, nullable = false)
+    Type type;
+    
+    public enum Type {
+        PRIVATE, GROUP
+    }
 }

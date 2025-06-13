@@ -2,15 +2,19 @@ package com.hungtd.chatapp.service.friend.impl;
 
 import com.hungtd.chatapp.dto.request.FriendRequestRequest;
 import com.hungtd.chatapp.dto.response.FriendRequestResponse;
+import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Friend;
 import com.hungtd.chatapp.entity.FriendRequest;
+import com.hungtd.chatapp.entity.Participant;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.enums.FriendRequestStatus;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.FriendRequestMapper;
+import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.FriendRepository;
 import com.hungtd.chatapp.repository.FriendRequestRepository;
+import com.hungtd.chatapp.repository.ParticipantRepository;
 import com.hungtd.chatapp.repository.UserRepository;
 import com.hungtd.chatapp.service.friend.FriendRequestService;
 import lombok.AccessLevel;
@@ -20,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -33,6 +38,8 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     UserRepository userRepository;
     FriendRequestMapper friendRequestMapper;
     FriendRepository friendRepository;
+    ConversationRepository conversationRepository;
+    ParticipantRepository participantRepository;
 
     @Override
     public FriendRequestResponse sendFriendRequest(FriendRequestRequest friendRequestRequest) {
@@ -93,13 +100,36 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
         FriendRequest saved = friendRequestRepository.save(friendRequest);
         
-        // Create friendship record - only need one record now
+        // Create friendship record
         Friend friendship = Friend.builder()
                 .userId1(currentUser.getId())
                 .userId2(friendRequest.getSender().getId())
                 .build();
         
         friendRepository.save(friendship);
+        
+        // Create a private conversation between these two users
+        Conversation conversation = Conversation.builder()
+                .title("") // No title for private conversations
+                .type(Conversation.Type.PRIVATE)
+                .build();
+        
+        conversation = conversationRepository.save(conversation);
+        
+        Participant participant1 = Participant.builder()
+                .conversationId(conversation.getId())
+                .userId(currentUser.getId())
+                .type(Participant.Type.MEMBER)
+                .build();
+        
+        Participant participant2 = Participant.builder()
+                .conversationId(conversation.getId())
+                .userId(friendRequest.getSender().getId())
+                .type(Participant.Type.MEMBER)
+                .build();
+        
+        participantRepository.save(participant1);
+        participantRepository.save(participant2);
         
         return friendRequestMapper.toFriendRequestResponse(saved);
     }

@@ -2,9 +2,12 @@ package com.hungtd.chatapp.configuration;
 
 import com.hungtd.chatapp.dto.request.IntrospectRequest;
 import com.hungtd.chatapp.dto.response.IntrospectResponse;
+import com.hungtd.chatapp.service.auth.AuthenticationService;
 import com.hungtd.chatapp.service.auth.impl.AuthenticationServiceImpl;
 import com.nimbusds.jose.JOSEException;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -23,12 +26,12 @@ public class CustomJwtDecoder implements JwtDecoder {
     private String SIGNER_KEY;
 
     @Autowired
-    private AuthenticationServiceImpl authenticationServiceImpl;
+    private AuthenticationService authenticationService;
 
     @Override
     public Jwt decode(String token) throws JwtException {
         try {
-            IntrospectResponse result = authenticationServiceImpl.introspect(IntrospectRequest.builder()
+            IntrospectResponse result = authenticationService.introspect(IntrospectRequest.builder()
                     .token(token)
                     .build());
 

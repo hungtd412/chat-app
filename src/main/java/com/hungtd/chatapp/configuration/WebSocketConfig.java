@@ -24,7 +24,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         // Register the "/ws" endpoint, enabling the SockJS fallback options so that
-        // alternative messaging options can be used if WebSocket is not available.
+        // alternative messaging options can be used if WebSocketService is not available.
         registry.addEndpoint("/ws")
                 .setAllowedOrigins(feUrl)
                 .withSockJS();

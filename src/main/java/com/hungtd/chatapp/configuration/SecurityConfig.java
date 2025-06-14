@@ -48,7 +48,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
                         .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/chat/public/**").permitAll()
                         .anyRequest().authenticated()
         );
 

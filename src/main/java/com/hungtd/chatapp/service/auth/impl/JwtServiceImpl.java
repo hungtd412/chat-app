@@ -15,6 +15,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.NonFinal;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -22,6 +23,7 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -136,12 +138,56 @@ public class JwtServiceImpl implements JwtService {
     }
 
     // Build scopes from user roles
-    private String buildScope(User user) {
+    public String buildScope(User user) {
         StringJoiner rolesStringJoiner = new StringJoiner(" ");
 
         if (!CollectionUtils.isEmpty(user.getRoles()))
             user.getRoles().forEach(rolesStringJoiner::add);
 
         return rolesStringJoiner.toString();
+    }
+
+    @Override
+    public String extractUsernameByTokenStompHeader(StompHeaderAccessor headerAccessor) {
+        String token = extractTokenFromStompHeader(headerAccessor);
+
+        String username = extractUsernameFromToken(token);
+
+        if (Objects.equals(username, null)) {
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        return username;
+    }
+
+    public String extractTokenFromStompHeader(StompHeaderAccessor headerAccessor) {
+        String token = headerAccessor.getFirstNativeHeader("Authorization");
+        if (token != null && token.startsWith("Bearer ")) {
+            return token.substring(7);
+        } else {
+            return (String) headerAccessor.getSessionAttributes().get("token");
+        }
+    }
+
+    public String extractUsernameFromToken(String token) {
+        try {
+            String[] splitToken = token.split("\\.");
+            if (splitToken.length != 3) {
+                return null;
+            }
+
+            String payload = new String(java.util.Base64.getDecoder().decode(splitToken[1]));
+
+            if (payload.contains("\"sub\":\"")) {
+                int startIndex = payload.indexOf("\"sub\":\"") + 7;
+                int endIndex = payload.indexOf("\"", startIndex);
+                return payload.substring(startIndex, endIndex);
+            }
+
+            return null;
+        } catch (Exception e) {
+            log.error("Error extracting username from token", e);
+            return null;
+        }
     }
 }

@@ -114,7 +114,7 @@ $(document).ready(function() {
         try {
             const message = JSON.parse(payload.body);
             console.log('Parsed message:', message);
-            console.log(message.conversationId )
+            console.log(message.conversationId)
             // Only process message if it's for the current conversation
             if (message.conversationId && message.conversationId == conversationId) {
                 appendNewMessage(message);
@@ -146,7 +146,7 @@ $(document).ready(function() {
         }
         
         const messageClass = isMine ? 'outgoing' : 'incoming';
-        const content = message.message || message.content;
+        const content = message.content;
         
         const messageEl = $(`
             <div class="message ${messageClass}">
@@ -290,7 +290,7 @@ function sendMessage(conversationId) {
         const message = {
             conversationId: conversationId,
             type: 'TEXT',
-            message: messageText
+            content: messageText // Changed from message to content to match MessageRequest
         };
         
         // Add authorization headers when sending the message
@@ -300,17 +300,6 @@ function sendMessage(conversationId) {
         console.log(headers)
         
         window.stompClient.send("/app/chat.send", headers, JSON.stringify(message));
-        
-        // Add message to UI immediately for a responsive feel
-        const username = getUsernameFromToken(localStorage.getItem('access_token'));
-
-        const optimisticMessage = {
-            senderId: username, // This is now username
-            content: messageText,
-            createdAt: new Date(),
-            belongCurrentUser: true
-        };
-        // appendNewMessage(optimisticMessage);
     } else {
         console.error('WebSocket not connected, cannot send message');
         alert('Connection error. Please refresh the page and try again.');
@@ -338,7 +327,7 @@ function appendNewMessage(message) {
     }
     
     const messageClass = isMine ? 'outgoing' : 'incoming';
-    const content = message.message || message.content;
+    const content = message.content;
     
     const messageEl = $(`
         <div class="message ${messageClass}">
@@ -384,7 +373,10 @@ function formatTime(date) {
 }
 
 function escapeHtml(text) {
-    return text
+    if (text === null || text === undefined) {
+        return '';
+    }
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

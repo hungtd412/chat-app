@@ -54,7 +54,7 @@ public enum ErrorCode {
 
     //USER 106X
     USER_NOT_EXISTED(1060, "Người dùng không tồn tại!", 404),
-    
+
     //FRIEND REQUEST 107X
     CANNOT_SEND_FRIEND_REQUEST_TO_SELF(1070, "Không thể gửi lời mời kết bạn cho chính mình!", 400),
     FRIEND_REQUEST_ALREADY_SENT(1071, "Đã gửi lời mời kết bạn cho người dùng này!", 400),
@@ -64,7 +64,10 @@ public enum ErrorCode {
 
     //CHAT 108X
     CONVERSATION_NOT_FOUND(1080, "Cuộc hội thoại không tồn tại!", 404),
-    USER_NOT_IN_CONVERSATION(1081, "Bạn không phải là thành viên của cuộc hội thoại này!", 403)
+    USER_NOT_IN_CONVERSATION(1081, "Bạn không phải là thành viên của cuộc hội thoại này!", 403),
+    RECEIVER_NOT_FOUND(1082, "Không tìm thấy người nhận!", 400),
+    INVALID_CONVERSATION_TYPE(1083, "Loại cuộc hội thoại không hợp lệ!", 400),
+    MESSAGE_SENDING_ERROR(1084, "Có lỗi xảy ra khi gửi tin nhắn", 500)
     ;
 
     int code;

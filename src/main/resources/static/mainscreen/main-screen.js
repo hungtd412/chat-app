@@ -34,8 +34,17 @@ $(document).ready(function() {
         const conversationType = $(this).data('type');
         const displayName = $(this).find('.conversation-name').text();
         
-        // Load chat component in the main content area
-        loadChatComponent(conversationId, conversationType, displayName);
+        // Clear unread badge when conversation is clicked
+        clearUnreadBadge($(this));
+        
+        // Delegate loading the chat component to chat.js
+        loadChatInContainer(
+            $('#chat-container'), 
+            conversationId, 
+            conversationType, 
+            displayName,
+            stompClient
+        );
     });
 
     // New conversation button click handler
@@ -103,6 +112,11 @@ $(document).ready(function() {
 });
 
 let stompClient = null;
+// Store conversations locally
+let userConversations = [];
+
+// Track subscriptions to avoid duplicates
+window.activeSubscriptions = window.activeSubscriptions || {};
 
 function connectToWebSocket() {
     // Get JWT token for authentication
@@ -129,6 +143,8 @@ function connectToWebSocket() {
     
     // Connect to the WebSocket and subscribe to personal queue
     stompClient.connect(headers, function(frame) {
+        console.log('Connected to WebSocket');
+        
         // Get username from token
         const username = getUsernameFromToken(token);
 
@@ -136,6 +152,7 @@ function connectToWebSocket() {
             // Subscribe to personal queue for private messages using username
             stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
             console.log(`Subscribed to /user/${username}/queue/messages`);
+
         }
     }, function(error) {
         console.error('WebSocket connection error: ', error);
@@ -151,24 +168,43 @@ function onMessageReceived(payload) {
         
         const conversationId = message.conversationId;
         
+        // Move conversation to top regardless of whether it's active or not
+        moveConversationToTop(conversationId);
+        
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');
         
-        if (activeConversationId && activeConversationId == conversationId) {
-            // If we're viewing this conversation, append the message
-            appendNewMessage(message);
-            
-            // Play a subtle notification sound for new messages
-            if (!message.belongCurrentUser) {
-                playNotificationSound();
-            }
+        if (activeConversationId && activeConversationId === conversationId) {
+            // If we're viewing this conversation, delegate message handling to chat.js
+            handleIncomingMessage(payload, conversationId);
         } else if (!message.belongCurrentUser) {
-            // Otherwise, update unread count and play notification
+            // Only increment unread count for messages we didn't send
             playNotificationSound();
             updateUnreadCount(conversationId);
         }
     } catch (e) {
         console.error('Error processing message:', e);
+    }
+}
+
+/**
+ * Moves a conversation to the top of the conversation list
+ * @param {number} conversationId - The ID of the conversation to move
+ */
+function moveConversationToTop(conversationId) {
+    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationItem.length > 0) {
+        const conversationList = $('#conversation-list');
+        // Only move if it's not already at the top
+        if (conversationItem.index() > 0) {
+            // Clone the conversation item to preserve event handlers
+            const clonedItem = conversationItem.clone(true);
+            // Remove the original
+            conversationItem.remove();
+            // Prepend the clone to the list (add to top)
+            conversationList.prepend(clonedItem);
+            console.log(`Moved conversation ${conversationId} to the top`);
+        }
     }
 }
 
@@ -178,9 +214,12 @@ function playNotificationSound() {
 }
 
 function updateUnreadCount(conversationId) {
-    // Implement logic to update unread message count for a conversation
+    console.log("updateUnreadCount for conversation", conversationId);
+    // Find the conversation item in the list
     const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    
     if (conversationItem.length > 0) {
+        // Check if there's already an unread badge
         let unreadBadge = conversationItem.find('.unread-badge');
         
         if (unreadBadge.length === 0) {
@@ -188,13 +227,67 @@ function updateUnreadCount(conversationId) {
             conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
         } else {
             // Update existing badge
-            const count = parseInt(unreadBadge.text()) + 1;
-            unreadBadge.text(count);
+            const currentCount = parseInt(unreadBadge.text()) || 0;
+            unreadBadge.text(currentCount + 1);
+        }
+        
+        // Note: Moving the conversation is now handled by moveConversationToTop
+    } else {
+        // If conversation not in the list (e.g., a new conversation), refresh the conversation list
+        loadConversations();
+    }
+    
+    // Update total unread count in page title
+    updatePageTitle();
+}
+
+function clearUnreadBadge(conversationItem) {
+    const unreadBadge = conversationItem.find('.unread-badge');
+    if (unreadBadge.length > 0) {
+        const conversationId = conversationItem.data('id');
+        unreadBadge.remove();
+        updatePageTitle();
+        
+        // Remove this conversation from stored unread counts in session storage
+        const storedCounts = sessionStorage.getItem('unreadCounts');
+        if (storedCounts) {
+            try {
+                const unreadCounts = JSON.parse(storedCounts);
+                if (unreadCounts[conversationId]) {
+                    delete unreadCounts[conversationId];
+                    sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+                }
+            } catch (e) {
+                console.error('Error updating stored unread counts:', e);
+            }
         }
     }
 }
 
+function updatePageTitle() {
+    let totalUnread = 0;
+    
+    // Count all unread messages across conversations
+    $('.unread-badge').each(function() {
+        totalUnread += parseInt($(this).text()) || 0;
+    });
+    
+    // Update page title
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) Chat Application`;
+    } else {
+        document.title = 'Chat Application';
+    }
+}
+
 function loadConversations() {
+    // If we already have conversations loaded, use them
+    if (userConversations.length > 0) {
+        displayConversations(userConversations);
+        return;
+    }
+
+    // Otherwise fetch conversations
     $.ajax({
         url: 'http://localhost:9000/conversations',
         type: 'GET',
@@ -202,7 +295,9 @@ function loadConversations() {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         },
         success: function(response) {
-            displayConversations(response.data);
+            // Store conversations in local variable
+            userConversations = response.data || [];
+            displayConversations(userConversations);
         },
         error: function(xhr, status, error) {
             console.error('Error loading conversations:', error);
@@ -233,63 +328,100 @@ function displayConversations(conversations) {
                 </div>
                 <div class="conversation-info">
                     <div class="conversation-name">${displayName}</div>
+                    <!-- The unread badge will be added here when needed -->
                 </div>
             </div>
         `;
 
         conversationList.append(conversationItem);
     });
+    
+    // Check if there are any stored unread counts to restore
+    restoreUnreadCounts();
 }
 
-function loadChatComponent(conversationId, conversationType, displayName) {
-    // Clear the chat container and show loading
-    const chatContainer = $('#chat-container');
-    chatContainer.html('<div class="loading">Loading chat...</div>');
-
-    // Load the chat component HTML template
-    $.get('../chat/chat.html', function(template) {
-        // Replace the chat container with the loaded template
-        chatContainer.html(template);
-
-        // Set data attributes for the chat frame
-        $('#chat-frame').attr('data-conversation-id', conversationId);
-        $('#chat-frame').attr('data-conversation-type', conversationType);
-
-        // Set initial UI content
-        $('#chat-title').text(displayName);
-        $('#status-text').text(conversationType === 'PRIVATE' ? 'Online' : 'Group chat');
-
-        // Remove back button since we're in the main screen
-        $('#back-button').hide();
-
-        // Setup event handlers for send button
-        $('#send-button').attr('data-conversation-id', conversationId);
-        $('#send-button').click(function() {
-            sendMessage(conversationId, stompClient, 'message-input');
-        });
-
-        // Setup event handler for enter key in message input
-        $('#message-input').keypress(function(e) {
-            if (e.which === 13) { // Enter key
-                sendMessage(conversationId, stompClient, 'message-input');
-            }
-        });
-
-        initializeChat(conversationId, conversationType);
-    })
-    .fail(function(xhr, status, error) {
-        console.error('Error loading chat template:', error);
-        chatContainer.html(`
-            <div class="error-container">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
-                <h3>Cannot render the conversation</h3>
-                <p>There was a problem loading the chat interface. Please try again later.</p>
-                <button class="retry-button" onclick="loadChatComponent('${conversationId}', '${conversationType}', '${displayName}')">
-                    <i class="fas fa-sync"></i> Retry
-                </button>
-            </div>
-        `);
+function storeUnreadCounts() {
+    const unreadCounts = {};
+    
+    $('.conversation-item').each(function() {
+        const id = $(this).data('id');
+        const badge = $(this).find('.unread-badge');
+        if (badge.length > 0) {
+            unreadCounts[id] = badge.text();
+        }
     });
+    
+    if (Object.keys(unreadCounts).length > 0) {
+        sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+    }
+}
+
+function restoreUnreadCounts() {
+    const storedCounts = sessionStorage.getItem('unreadCounts');
+    if (storedCounts) {
+        try {
+            const unreadCounts = JSON.parse(storedCounts);
+            
+            for (const [id, count] of Object.entries(unreadCounts)) {
+                const conversationItem = $(`.conversation-item[data-id="${id}"]`);
+                if (conversationItem.length > 0) {
+                    conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
+                    // Removed adding .unread class since we don't want to change the background
+                }
+            }
+            
+            // Update the page title
+            updatePageTitle();
+            
+        } catch (e) {
+            console.error('Error restoring unread counts:', e);
+        }
+    }
+}
+
+// Store unread counts when page is unloaded
+$(window).on('beforeunload', function() {
+    storeUnreadCounts();
+});
+
+// Add this to the ready function
+$(document).ready(function() {
+    // ...existing code...
+    
+    // Make unread counts persist across page refreshes
+    window.addEventListener('unload', storeUnreadCounts);
+});
+
+function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
+    const messageInput = $(`#${messageInputId}`);
+    const messageText = messageInput.val().trim();
+
+    if (!messageText) return;
+
+    // Clear input before sending to make UI more responsive
+    messageInput.val('');
+
+    // Check if we can use WebSocket
+    if (stompClient && stompClient.connected) {
+        console.log('Sending message via WebSocket');
+        const message = {
+            conversationId: conversationId,
+            type: 'TEXT',
+            content: messageText
+        };
+
+        // Add authorization headers when sending the message
+        const headers = {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        };
+
+        // Move the conversation to the top when sending a message too
+        moveConversationToTop(conversationId);
+
+        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    } else {
+        console.error('WebSocket not connected, cannot send message');
+        alert('Connection error. Please refresh the page and try again.');
+        messageInput.val(messageText); // Restore the message text
+    }
 }

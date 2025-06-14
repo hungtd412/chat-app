@@ -52,7 +52,7 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public List<Conversation> getCurrentUserConversations() {
         User currentUser = userService.currentUser();
-        return conversationRepository.findAllByUserId(currentUser.getId());
+        return conversationRepository.findAllByUserIdOrderByNewestMessage(currentUser.getId());
     }
     
     @Override

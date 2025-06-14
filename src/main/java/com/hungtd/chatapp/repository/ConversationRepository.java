@@ -12,6 +12,11 @@ import java.util.Optional;
 @Repository
 public interface ConversationRepository extends JpaRepository<Conversation, Long> {
     
-    @Query("SELECT DISTINCT c FROM Conversation c JOIN Participant p ON c.id = p.conversationId WHERE p.userId = :userId")
-    List<Conversation> findAllByUserId(@Param("userId") Long userId);
+    @Query("SELECT DISTINCT c FROM Conversation c " +
+           "JOIN Participant p ON c.id = p.conversationId " +
+           "LEFT JOIN Message m ON c.id = m.conversation.id " +
+           "WHERE p.userId = :userId " +
+           "GROUP BY c.id " +
+           "ORDER BY COALESCE(MAX(m.id), 0) DESC")
+    List<Conversation> findAllByUserIdOrderByNewestMessage(@Param("userId") Long userId);
 }

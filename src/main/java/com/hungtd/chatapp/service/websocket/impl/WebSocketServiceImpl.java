@@ -42,10 +42,8 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public void sendWebSocketMessages(Message message, Conversation conversation, Long currentUserId, String currentUsername) {
-        if (conversation.getType() == Conversation.Type.PRIVATE) {
-            sendPrivateMessage(message, conversation.getId(), currentUserId, currentUsername);
-        } else if (conversation.getType() == Conversation.Type.GROUP) {
-            sendGroupMessage(conversation.getId(), message);
+        if (conversation.getType() == Conversation.Type.PRIVATE || conversation.getType() == Conversation.Type.GROUP) {
+            sendMessage(message, conversation.getId(), currentUserId, currentUsername);
         } else {
             throw new AppException(ErrorCode.INVALID_CONVERSATION_TYPE);
         }
@@ -72,8 +70,7 @@ public class WebSocketServiceImpl implements WebSocketService {
                 .collect(Collectors.toList());
     }
 
-    private void sendPrivateMessage(Message message, Long conversationId,
-                                  Long currentUserId, String currentUsername) {
+    private void sendMessage(Message message, Long conversationId,Long currentUserId, String currentUsername) {
         List<String> receiverUsernames = findOtherUsernamesInConversation(conversationId, currentUserId);
         
         // Use the mapper to create message responses
@@ -98,21 +95,6 @@ public class WebSocketServiceImpl implements WebSocketService {
             }
         } catch (MessagingException messagingException) {
             log.error("Failed to send WebSocket message", messagingException);
-            throw new AppException(ErrorCode.MESSAGE_SENDING_ERROR);
-        }
-    }
-
-    private void sendGroupMessage(Long conversationId, Message message) {
-        // Use the mapper to create message response
-        MessageResponse senderMessage = messageMapper.toMessageResponse(message, conversationId, true);
-        
-        try {
-            messagingTemplate.convertAndSend(
-                "/topic/conversation." + conversationId,
-                senderMessage
-            );
-        } catch (MessagingException messagingException) {
-            log.error("Failed to send WebSocket message to group", messagingException);
             throw new AppException(ErrorCode.MESSAGE_SENDING_ERROR);
         }
     }

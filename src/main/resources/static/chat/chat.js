@@ -66,12 +66,26 @@ function initializeChat(conversationId, conversationType) {
     }
 }
 
+// Track subscriptions to avoid duplicates
+window.activeSubscriptions = window.activeSubscriptions || {};
+
 function subscribeToGroupChat(conversationId) {
     if (!window.stompClient || !window.stompClient.connected) return;
     
-    window.stompClient.subscribe(`/topic/conversation.${conversationId}`, function(payload) {
+    // Check if we're already subscribed to this topic
+    const topicId = `/topic/conversation.${conversationId}`;
+    if (window.activeSubscriptions[topicId]) {
+        console.log(`Already subscribed to topic: ${topicId}`);
+        return;
+    }
+    
+    // Subscribe and store the subscription
+    const subscription = window.stompClient.subscribe(topicId, function(payload) {
         handleIncomingMessage(payload, conversationId);
     });
+    
+    // Store subscription reference for future checks
+    window.activeSubscriptions[topicId] = subscription;
     console.log(`Subscribed to topic for conversation ${conversationId}`);
 }
 
@@ -152,11 +166,20 @@ function subscribeToTopics() {
         const conversationId = getConversationIdFromUI();
 
         if (username) {
-            // Subscribe to the user's private queue using username
-            window.stompClient.subscribe(`/user/${username}/queue/messages`, function(payload) {
-                handleIncomingMessage(payload, conversationId);
-            });
-            console.log(`Subscribed to personal queue for user ${username}`);
+            // Check if we're already subscribed to the user queue
+            const queueId = `/user/${username}/queue/messages`;
+            if (!window.activeSubscriptions[queueId]) {
+                // Subscribe to the user's private queue using username
+                const subscription = window.stompClient.subscribe(queueId, function(payload) {
+                    handleIncomingMessage(payload, conversationId);
+                });
+                
+                // Store subscription reference
+                window.activeSubscriptions[queueId] = subscription;
+                console.log(`Subscribed to personal queue for user ${username}`);
+            } else {
+                console.log(`Already subscribed to personal queue: ${queueId}`);
+            }
         }
     
         // Subscribe to the conversation topic (for group chats)
@@ -203,5 +226,82 @@ function loadConversationDetails(conversationId) {
             $('#chat-title').text('Chat');
             $('.status').text('Error loading details');
         }
+    });
+}
+
+/**
+ * Loads a chat component into the specified container
+ * 
+ * @param {jQuery} container - The jQuery element to load the chat into
+ * @param {number} conversationId - The ID of the conversation
+ * @param {string} conversationType - The type of conversation (PRIVATE or GROUP)
+ * @param {string} displayName - The name to display in the chat header
+ * @param {object} stompClientInstance - The STOMP client instance
+ */
+function loadChatInContainer(container, conversationId, conversationType, displayName, stompClientInstance) {
+    // Clear the chat container and show loading
+    container.html('<div class="loading">Loading chat...</div>');
+
+    // Load the chat component HTML template
+    $.get('../chat/chat.html', function(template) {
+        // Replace the chat container with the loaded template
+        container.html(template);
+
+        // Set data attributes for the chat frame
+        $('#chat-frame').attr('data-conversation-id', conversationId);
+        $('#chat-frame').attr('data-conversation-type', conversationType);
+
+        // Set initial UI content
+        $('#chat-title').text(displayName);
+        $('#status-text').text(conversationType === 'PRIVATE' ? 'Online' : 'Group chat');
+
+        // Remove back button when in main screen
+        $('#back-button').hide();
+
+        // Setup event handlers for send button
+        $('#send-button').attr('data-conversation-id', conversationId);
+        $('#send-button').click(function() {
+            sendMessage(conversationId, stompClientInstance, 'message-input');
+        });
+
+        // Setup event handler for enter key in message input
+        $('#message-input').keypress(function(e) {
+            if (e.which === 13) { // Enter key
+                sendMessage(conversationId, stompClientInstance, 'message-input');
+            }
+        });
+
+        // Initialize the chat component
+        initializeChat(conversationId, conversationType);
+        
+        // Check if we need to subscribe to group chat topic
+        if (conversationType === 'GROUP') {
+            const topicId = `/topic/conversation.${conversationId}`;
+            
+            // Check if we're already subscribed
+            if (!window.activeSubscriptions[topicId] && stompClientInstance && stompClientInstance.connected) {
+                // Subscribe and store the subscription
+                const subscription = stompClientInstance.subscribe(topicId, function(payload) {
+                    handleIncomingMessage(payload, conversationId);
+                });
+                window.activeSubscriptions[topicId] = subscription;
+                console.log(`Subscribed to topic for conversation ${conversationId} from loadChatInContainer`);
+            }
+        }
+    })
+    .fail(function(xhr, status, error) {
+        console.error('Error loading chat template:', error);
+        container.html(`
+            <div class="error-container">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <h3>Cannot render the conversation</h3>
+                <p>There was a problem loading the chat interface. Please try again later.</p>
+                <button class="retry-button" onclick="loadChatInContainer($('#chat-container'), '${conversationId}', '${conversationType}', '${displayName}', window.stompClient)">
+                    <i class="fas fa-sync"></i> Retry
+                </button>
+            </div>
+        `);
     });
 }

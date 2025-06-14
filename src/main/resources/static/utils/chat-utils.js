@@ -6,14 +6,14 @@
 // WebSocket Functions
 function getUsernameFromToken(token) {
     if (!token) return null;
-    
+
     try {
         // JWT token consists of 3 parts separated by dots
         const tokenParts = token.split('.');
         if (tokenParts.length !== 3) {
             return null;
         }
-        
+
         // The second part contains the payload
         const payload = JSON.parse(atob(tokenParts[1]));
         return payload.sub; // returning the username (subject)
@@ -23,32 +23,60 @@ function getUsernameFromToken(token) {
     }
 }
 
+/**
+ * Check if a websocket subscription already exists for a given destination
+ * @param {string} destination - The subscription destination
+ * @returns {boolean} True if the subscription exists, false otherwise
+ */
+function isAlreadySubscribed(destination) {
+    return window.activeSubscriptions && window.activeSubscriptions[destination] !== undefined;
+}
+
+/**
+ * Safely unsubscribe from a websocket destination
+ * @param {string} destination - The subscription destination to unsubscribe from
+ * @returns {boolean} True if unsubscribed successfully, false otherwise
+ */
+function unsubscribeFrom(destination) {
+    if (window.activeSubscriptions && window.activeSubscriptions[destination]) {
+        try {
+            window.activeSubscriptions[destination].unsubscribe();
+            delete window.activeSubscriptions[destination];
+            console.log(`Unsubscribed from: ${destination}`);
+            return true;
+        } catch (e) {
+            console.error(`Failed to unsubscribe from ${destination}:`, e);
+        }
+    }
+    return false;
+}
+
 // Message Display Functions
 function formatDate(date) {
     const today = new Date();
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    
+
     if (date.toDateString() === today.toDateString()) {
         return 'Today';
     } else if (date.toDateString() === yesterday.toDateString()) {
         return 'Yesterday';
     } else {
         // Format: June 12, 2023
-        return date.toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric'
         });
     }
 }
 
 function formatTime(date) {
     // Format: 10:30 AM
-    return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
+    return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
         minute: '2-digit',
-        hour12: true 
+        hour12: true
     });
 }
 
@@ -66,19 +94,20 @@ function escapeHtml(text) {
 
 function appendNewMessage(message, messagesListId = 'messages-list') {
     console.log('Appending message to chat:', message);
+
     const isMine = message.belongCurrentUser;
-    
+
     const date = new Date(message.createdAt || new Date());
     const messageDate = formatDate(date);
     const timeString = formatTime(date);
-    
+
     // Find the correct messages list to append to
     const messagesList = $(`#${messagesListId}`);
     if (messagesList.length === 0) {
         console.error(`Messages list with ID ${messagesListId} not found`);
         return;
     }
-    
+
     // Check if we need to add a new date divider
     const lastDateDivider = messagesList.find('.date-divider:last span').text();
     if (!lastDateDivider || lastDateDivider !== messageDate) {
@@ -88,10 +117,10 @@ function appendNewMessage(message, messagesListId = 'messages-list') {
             </div>
         `);
     }
-    
+
     const messageClass = isMine ? 'outgoing' : 'incoming';
     const content = message.content;
-    
+
     const messageEl = $(`
         <div class="message ${messageClass}">
             ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
@@ -99,13 +128,13 @@ function appendNewMessage(message, messagesListId = 'messages-list') {
             <div class="message-time">${timeString}</div>
         </div>
     `);
-    
+
     messagesList.append(messageEl);
-    
+
     // Scroll to bottom of messages
     const messagesContainer = messagesList.closest('.messages-container');
     messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
-    
+
     console.log('Message appended successfully');
 }
 
@@ -117,16 +146,16 @@ function displayMessages(messages, messagesListId = 'messages-list') {
 
     const messagesListEl = $(`#${messagesListId}`);
     messagesListEl.empty();
-    
+
     // Sort messages by id in ascending order (oldest first)
     // Even though API returns in descending order, for display we want ascending
     const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
-    
+
     let currentDate = '';
     sortedMessages.forEach(message => {
         const date = new Date(message.createdAt);
         const messageDate = formatDate(date);
-        
+
         // Add date divider if this is a new date
         if (messageDate !== currentDate) {
             currentDate = messageDate;
@@ -136,10 +165,10 @@ function displayMessages(messages, messagesListId = 'messages-list') {
                 </div>
             `);
         }
-        
+
         const messageClass = message.belongCurrentUser ? 'outgoing' : 'incoming';
         const timeString = formatTime(date);
-        
+
         const messageEl = $(`
             <div class="message ${messageClass}">
                 ${!message.belongCurrentUser ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
@@ -147,10 +176,10 @@ function displayMessages(messages, messagesListId = 'messages-list') {
                 <div class="message-time">${timeString}</div>
             </div>
         `);
-        
+
         messagesListEl.append(messageEl);
     });
-    
+
     // Scroll to bottom of messages
     const messagesContainer = $('.messages-container');
     messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
@@ -168,7 +197,7 @@ function getAvatarInitial(name) {
 // API Functions
 function loadMessages(conversationId, messagesListId = 'messages-list') {
     $(`#${messagesListId}`).html('<div class="loading-messages">Loading messages...</div>');
-    
+
     return $.ajax({
         url: `http://localhost:9000/messages/conversation/${conversationId}`,
         type: 'GET',
@@ -189,9 +218,9 @@ function loadMessages(conversationId, messagesListId = 'messages-list') {
 function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
     const messageInput = $(`#${messageInputId}`);
     const messageText = messageInput.val().trim();
-    
+
     if (!messageText) return;
-    
+
     // Clear input before sending to make UI more responsive
     messageInput.val('');
 
@@ -203,12 +232,12 @@ function sendMessage(conversationId, stompClient, messageInputId = 'message-inpu
             type: 'TEXT',
             content: messageText
         };
-        
+
         // Add authorization headers when sending the message
         const headers = {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         };
-        
+
         stompClient.send("/app/chat.send", headers, JSON.stringify(message));
     } else {
         console.error('WebSocket not connected, cannot send message');

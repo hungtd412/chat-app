@@ -103,6 +103,11 @@ $(document).ready(function() {
 });
 
 let stompClient = null;
+// Store conversations locally
+let userConversations = [];
+
+// Track subscriptions to avoid duplicates
+window.activeSubscriptions = window.activeSubscriptions || {};
 
 function connectToWebSocket() {
     // Get JWT token for authentication
@@ -129,6 +134,8 @@ function connectToWebSocket() {
     
     // Connect to the WebSocket and subscribe to personal queue
     stompClient.connect(headers, function(frame) {
+        console.log('Connected to WebSocket');
+        
         // Get username from token
         const username = getUsernameFromToken(token);
 
@@ -136,11 +143,55 @@ function connectToWebSocket() {
             // Subscribe to personal queue for private messages using username
             stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
             console.log(`Subscribed to /user/${username}/queue/messages`);
+            
+            // After connecting, subscribe to all conversation topics the user belongs to
+            subscribeToAllConversations();
         }
     }, function(error) {
         console.error('WebSocket connection error: ', error);
         // Reconnect after delay
         setTimeout(connectToWebSocket, 5000);
+    });
+}
+
+function subscribeToAllConversations() {
+    // Get all conversations the user is part of
+    $.ajax({
+        url: 'http://localhost:9000/conversations',
+        type: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        },
+        success: function(response) {
+            if (response.data && response.data.length > 0) {
+                // Store conversations in local variable
+                userConversations = response.data;
+                
+                // Filter for group conversations and subscribe to each one
+                userConversations.forEach(conversation => {
+                    if (conversation.type === 'GROUP') {
+                        // Create topic ID for subscription check
+                        const topicId = `/topic/conversation.${conversation.id}`;
+                        
+                        // Check if we're already subscribed
+                        if (!window.activeSubscriptions[topicId]) {
+                            // Subscribe to the group conversation topic
+                            const subscription = stompClient.subscribe(topicId, onMessageReceived);
+                            
+                            // Store the subscription
+                            window.activeSubscriptions[topicId] = subscription;
+                            
+                            console.log(`Subscribed to group conversation topic: ${topicId}`);
+                        } else {
+                            console.log(`Already subscribed to topic: ${topicId}`);
+                        }
+                    }
+                });
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading conversations for WebSocket subscription:', error);
+        }
     });
 }
 
@@ -154,18 +205,13 @@ function onMessageReceived(payload) {
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');
         
-        if (activeConversationId && activeConversationId == conversationId) {
+        if (activeConversationId && activeConversationId === conversationId) {
             // If we're viewing this conversation, append the message
             appendNewMessage(message);
-            
-            // Play a subtle notification sound for new messages
-            if (!message.belongCurrentUser) {
-                playNotificationSound();
-            }
-        } else if (!message.belongCurrentUser) {
-            // Otherwise, update unread count and play notification
+        }
+
+        if (!message.belongCurrentUser) {
             playNotificationSound();
-            updateUnreadCount(conversationId);
         }
     } catch (e) {
         console.error('Error processing message:', e);
@@ -195,6 +241,13 @@ function updateUnreadCount(conversationId) {
 }
 
 function loadConversations() {
+    // If we already have conversations loaded, use them
+    if (userConversations.length > 0) {
+        displayConversations(userConversations);
+        return;
+    }
+
+    // Otherwise fetch conversations
     $.ajax({
         url: 'http://localhost:9000/conversations',
         type: 'GET',
@@ -202,7 +255,9 @@ function loadConversations() {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         },
         success: function(response) {
-            displayConversations(response.data);
+            // Store conversations in local variable
+            userConversations = response.data || [];
+            displayConversations(userConversations);
         },
         error: function(xhr, status, error) {
             console.error('Error loading conversations:', error);
@@ -275,7 +330,21 @@ function loadChatComponent(conversationId, conversationType, displayName) {
             }
         });
 
+        // Initialize the chat component using functions from chat.js
         initializeChat(conversationId, conversationType);
+        
+        // Check if we need to subscribe to group chat topic
+        if (conversationType === 'GROUP') {
+            const topicId = `/topic/conversation.${conversationId}`;
+            
+            // Check if we're already subscribed
+            if (!window.activeSubscriptions[topicId] && stompClient && stompClient.connected) {
+                // Subscribe and store the subscription
+                const subscription = stompClient.subscribe(topicId, onMessageReceived);
+                window.activeSubscriptions[topicId] = subscription;
+                console.log(`Subscribed to topic for conversation ${conversationId} from loadChatComponent`);
+            }
+        }
     })
     .fail(function(xhr, status, error) {
         console.error('Error loading chat template:', error);

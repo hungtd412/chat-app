@@ -23,7 +23,7 @@ public interface MessageMapper {
     @Mapping(target = "conversationId", source = "conversationId")
     @Mapping(target = "isBelongCurrentUser", source = "isBelongCurrentUser")
     @Mapping(target = "content", source = "message.message") // Map message.message to content
-    MessageResponse toMessageResponse(Message message, Long conversationId, boolean isBelongCurrentUser);
+    MessageResponse toMessageResponse(Message message, Long conversationId, Boolean isBelongCurrentUser);
     
     /**
      * Maps a MessageRequest to a Message entity

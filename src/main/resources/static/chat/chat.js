@@ -66,12 +66,26 @@ function initializeChat(conversationId, conversationType) {
     }
 }
 
+// Track subscriptions to avoid duplicates
+window.activeSubscriptions = window.activeSubscriptions || {};
+
 function subscribeToGroupChat(conversationId) {
     if (!window.stompClient || !window.stompClient.connected) return;
     
-    window.stompClient.subscribe(`/topic/conversation.${conversationId}`, function(payload) {
+    // Check if we're already subscribed to this topic
+    const topicId = `/topic/conversation.${conversationId}`;
+    if (window.activeSubscriptions[topicId]) {
+        console.log(`Already subscribed to topic: ${topicId}`);
+        return;
+    }
+    
+    // Subscribe and store the subscription
+    const subscription = window.stompClient.subscribe(topicId, function(payload) {
         handleIncomingMessage(payload, conversationId);
     });
+    
+    // Store subscription reference for future checks
+    window.activeSubscriptions[topicId] = subscription;
     console.log(`Subscribed to topic for conversation ${conversationId}`);
 }
 
@@ -152,11 +166,20 @@ function subscribeToTopics() {
         const conversationId = getConversationIdFromUI();
 
         if (username) {
-            // Subscribe to the user's private queue using username
-            window.stompClient.subscribe(`/user/${username}/queue/messages`, function(payload) {
-                handleIncomingMessage(payload, conversationId);
-            });
-            console.log(`Subscribed to personal queue for user ${username}`);
+            // Check if we're already subscribed to the user queue
+            const queueId = `/user/${username}/queue/messages`;
+            if (!window.activeSubscriptions[queueId]) {
+                // Subscribe to the user's private queue using username
+                const subscription = window.stompClient.subscribe(queueId, function(payload) {
+                    handleIncomingMessage(payload, conversationId);
+                });
+                
+                // Store subscription reference
+                window.activeSubscriptions[queueId] = subscription;
+                console.log(`Subscribed to personal queue for user ${username}`);
+            } else {
+                console.log(`Already subscribed to personal queue: ${queueId}`);
+            }
         }
     
         // Subscribe to the conversation topic (for group chats)

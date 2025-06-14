@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat Conversations</title>
+    <title>Chat Application</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="chat-list.css">
+    <link rel="stylesheet" href="main-screen.css">
 </head>
 <body>
     <div class="container">
@@ -24,18 +24,25 @@
                 <!-- Conversations will be loaded here -->
                 <div class="loading">Loading conversations...</div>
             </div>
-            <!-- Removed sidebar-footer with logout button -->
+            <div class="sidebar-footer">
+                <button id="logout-button">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
         </div>
         <div class="main-content">
-            <div class="empty-state">
-                <i class="far fa-comments empty-icon"></i>
-                <h3>Select a conversation</h3>
-                <p>Choose a conversation from the list to start chatting</p>
+            <div id="chat-container" class="chat-container">
+                <div class="empty-state">
+                    <i class="far fa-comments empty-icon"></i>
+                    <h3>Select a conversation</h3>
+                    <p>Choose a conversation from the list to start chatting</p>
+                </div>
             </div>
         </div>
     </div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="chat-list.js"></script>
+    <script src="main-screen.js"></script>
 </body>
 </html>

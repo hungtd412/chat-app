@@ -124,16 +124,23 @@ body {
 
 .main-content {
     flex-grow: 1;
-    padding: 20px;
+    padding: 0;
     background-color: #f0f2f5;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+}
+
+.chat-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
 .empty-state {
     text-align: center;
     color: #777;
+    margin: auto;
 }
 
 .empty-icon {
@@ -150,6 +157,46 @@ body {
     text-align: center;
     color: #777;
     padding: 20px;
+}
+
+.error {
+    color: #f44336;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Fix logout button styling */
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid #eee;
+    margin-top: auto; /* Push to bottom */
+    position: sticky;
+    bottom: 0;
+    background-color: #fff;
+    z-index: 10;
+}
+
+#logout-button {
+    width: 100%;
+    padding: 12px;
+    background-color: #f44336; /* Red color for logout */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    transition: background-color 0.3s;
+}
+
+#logout-button:hover {
+    background-color: #d32f2f; /* Darker red on hover */
+}
+
+#logout-button i {
+    margin-right: 8px;
 }
 
 @media (max-width: 768px) {

@@ -159,7 +159,7 @@ public class AppInitConfig {
 
     private void createConversations(UserRepository userRepository) {
         if (conversationRepository.count() > 0) {
-            log.info("Conversation data already exists, skipping creation");
+            log.info("ConversationService data already exists, skipping creation");
             return;
         }
 

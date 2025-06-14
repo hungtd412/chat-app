@@ -14,7 +14,7 @@ import jakarta.validation.constraints.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageRequest {
-    @NotNull(message = "Conversation ID is required")
+    @NotNull(message = "ConversationService ID is required")
     private Long conversationId;
     
     @NotBlank(message = "Message content cannot be empty")

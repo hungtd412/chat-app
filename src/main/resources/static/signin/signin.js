@@ -15,13 +15,15 @@ $(document).ready(function () {
             data: JSON.stringify({ username, password }),
             success: function (response) {
                 console.log('Login successful:', response);
-                localStorage.setItem('jwt_token', response.token);
-                alert('Login successful!');
-                window.location.href = '/chat.html';
+                // Store both tokens from the response
+                localStorage.setItem('access_token', response.data.accessToken);
+                localStorage.setItem('refresh_token', response.data.refreshToken);
+                // Redirect to main-screen.html instead of chat-list.html
+                window.location.href = '../mainscreen/main-screen.html';
             },
             error: function (xhr, status, error) {
                 console.error('Login error:', xhr.responseJSON || error);
-                $('#error-message').text(xhr.responseJSON?.message).show();
+                $('#error-message').text(xhr.responseJSON?.message || 'Login failed').show();
             }
         });
     });

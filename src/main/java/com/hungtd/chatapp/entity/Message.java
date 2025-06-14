@@ -40,17 +40,4 @@ public class Message extends BaseEntity {
     public enum Type {
         TEXT, THUMB, FILE
     }
-    
-    // For backward compatibility with code using conversationId directly
-    @Transient
-    public Long getConversationId() {
-        return conversation != null ? conversation.getId() : null;
-    }
-    
-    public void setConversationId(Long conversationId) {
-        if (this.conversation == null) {
-            this.conversation = new Conversation();
-        }
-        this.conversation.setId(conversationId);
-    }
 }

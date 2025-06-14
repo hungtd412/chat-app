@@ -1,21 +1,19 @@
 package com.hungtd.chatapp.service.chat.impl;
 
 import com.hungtd.chatapp.dto.request.MessageRequest;
+import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.*;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.MessageRepository;
 import com.hungtd.chatapp.repository.ParticipantRepository;
-import com.hungtd.chatapp.repository.UserRepository;
-import com.hungtd.chatapp.service.chat.ChatService;
+import com.hungtd.chatapp.service.chat.MessageService;
 import com.hungtd.chatapp.service.user.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +22,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class ChatServiceImpl implements ChatService {
+public class MessageServiceImpl implements MessageService {
 
     UserService userService;
 
@@ -90,5 +88,17 @@ public class ChatServiceImpl implements ChatService {
         }
         
         return conversation;
+    }
+
+    @Override
+    public List<Message> getMessagesByConversationId(Long conversationId) {
+        // Get current user
+        Long userId = userService.currentUser().getId();
+        
+        // Validate conversation and user participation
+        validateConversationAndParticipation(conversationId, userId);
+        
+        // Fetch messages from repository ordered by ID (newest first)
+        return messageRepository.findAllByConversationIdOrderByIdDesc(conversationId);
     }
 }

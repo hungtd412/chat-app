@@ -55,10 +55,16 @@ public class User extends BaseEntity {
 
     @OneToMany(mappedBy = "receiver")
     Set<FriendRequest> receivedFriendRequests;
-    
+
     @OneToMany(mappedBy = "user1")
     Set<Friend> friendsAsUser1;
-    
+
     @OneToMany(mappedBy = "user2")
     Set<Friend> friendsAsUser2;
+
+    @OneToMany(mappedBy = "blocker")
+    Set<Block> blockedUsers;
+
+    @OneToMany(mappedBy = "blocked")
+    Set<Block> blockedByUsers;
 }

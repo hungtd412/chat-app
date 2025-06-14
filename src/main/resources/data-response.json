@@ -1,0 +1,38 @@
+{
+  "data" : [ {
+    "id" : 17,
+    "senderId" : 2,
+    "type" : "TEXT",
+    "content" : "Hôm nay bạn khỏe không?",
+    "createdAt" : "2025-06-13T15:36:37.210232",
+    "belongCurrentUser" : true
+  }, {
+    "id" : 16,
+    "senderId" : 3,
+    "type" : "TEXT",
+    "content" : "Xem trang web mới này mình tìm được này.",
+    "createdAt" : "2025-06-13T15:36:37.210232",
+    "belongCurrentUser" : false
+  }, {
+    "id" : 15,
+    "senderId" : 3,
+    "type" : "TEXT",
+    "content" : "Chúc mừng sinh nhật!",
+    "createdAt" : "2025-06-13T15:36:37.209232",
+    "belongCurrentUser" : false
+  }, {
+    "id" : 14,
+    "senderId" : 2,
+    "type" : "TEXT",
+    "content" : "Tuần sau mình đi nghỉ mát.",
+    "createdAt" : "2025-06-13T15:36:37.209232",
+    "belongCurrentUser" : true
+  }, {
+    "id" : 13,
+    "senderId" : 2,
+    "type" : "TEXT",
+    "content" : "Mình sẽ có mặt trong 10 phút nữa.",
+    "createdAt" : "2025-06-13T15:36:37.208231",
+    "belongCurrentUser" : true
+  } ]
+}

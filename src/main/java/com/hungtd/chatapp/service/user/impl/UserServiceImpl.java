@@ -60,7 +60,7 @@ public class UserServiceImpl implements UserService {
         return userRepository.findAll();
     }
 
-    public User profile() {
+    public User currentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
 

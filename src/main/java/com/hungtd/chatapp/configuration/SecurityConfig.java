@@ -35,7 +35,8 @@ public class SecurityConfig {
             "/auth/introspect",
             "/auth/refresh",
             "/users",
-            "/ws/**"
+            "/ws/**",
+            "/api/chat/public/**"
     };
 
     @Autowired
@@ -46,8 +47,9 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
-                        .requestMatchers(HttpMethod.GET, "/ws/**").permitAll() // Allow WebSocket connections
-                        .anyRequest().authenticated() //other requests must be authenticated
+                        .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/chat/public/**").permitAll()
+                        .anyRequest().authenticated()
         );
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
@@ -58,8 +60,6 @@ public class SecurityConfig {
         );
 
         httpSecurity.csrf(AbstractHttpConfigurer::disable);
-
-        // Apply the CORS configuration
         httpSecurity.cors(cors -> cors.configurationSource(corsConfigurationSource()));
 
         return httpSecurity.build();
@@ -68,7 +68,7 @@ public class SecurityConfig {
     @Bean
     public UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of(feUrl));
+        configuration.setAllowedOrigins(List.of(feUrl, "http://localhost:9000"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);

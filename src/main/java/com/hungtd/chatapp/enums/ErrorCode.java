@@ -60,7 +60,11 @@ public enum ErrorCode {
     FRIEND_REQUEST_ALREADY_SENT(1071, "Đã gửi lời mời kết bạn cho người dùng này!", 400),
     FRIEND_REQUEST_ALREADY_RECEIVED(1072, "Bạn đã nhận được lời mời kết bạn từ người dùng này!", 400),
     FRIEND_REQUEST_NOT_FOUND(1073, "Không tìm thấy lời mời kết bạn!", 404),
-    FRIEND_REQUEST_ALREADY_PROCESSED(1074, "Lời mời kết bạn đã được xử lý!", 400)
+    FRIEND_REQUEST_ALREADY_PROCESSED(1074, "Lời mời kết bạn đã được xử lý!", 400),
+
+    //CHAT 108X
+    CONVERSATION_NOT_FOUND(1080, "Cuộc hội thoại không tồn tại!", 404),
+    USER_NOT_IN_CONVERSATION(1081, "Bạn không phải là thành viên của cuộc hội thoại này!", 403)
     ;
 
     int code;

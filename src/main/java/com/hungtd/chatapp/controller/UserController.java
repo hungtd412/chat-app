@@ -63,7 +63,7 @@ public class UserController {
 
     @GetMapping("/profile")
     public ResponseEntity<ApiResponse<UserResponse>> profile() {
-        User user = userService.profile();
+        User user = userService.currentUser();
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<UserResponse>builder()

@@ -1,20 +1,20 @@
 services:
   redis:
-    image: redis:8.0.2  # Specifies Redis image version 8.0.2
-    container_name: chat-app-redis  # Custom name for the container
+    image: redis:8.0.2
+    container_name: chat-app-redis
     ports:
-      - "6379:6379"  # Maps container's Redis port to host machine
+      - "6379:6379"
     volumes:
-      - redis_data:/data  # Persists Redis data outside the container
-    restart: unless-stopped  # Automatically restarts container unless manually stopped
-    command: redis-server --appendonly yes  # Enables AOF persistence for data durability
+      - redis_data:/data
+    restart: unless-stopped
+    command: redis-server --appendonly yes
     networks:
-      - chat-app-network  # Attaches container to a custom network
+      - chat-app-network
 
 volumes:
-  redis_data:  # Defines a named volume for Redis data persistence
-    name: chat-app-redis-data  # Custom name for the volume
+  redis_data:
+    name: chat-app-redis-data
 
 networks:
-  chat-app-network:  # Defines a custom network for containers to communicate
-    name: chat-app-network  # Custom name for the network
+  chat-app-network:
+    name: chat-app-network

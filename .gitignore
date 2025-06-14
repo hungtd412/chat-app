@@ -34,3 +34,6 @@ build/
 
 ### Environment Variables ###
 env.properties
+
+## Tasks order
+to-do-list.txt

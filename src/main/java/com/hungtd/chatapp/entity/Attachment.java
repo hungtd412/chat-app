@@ -18,8 +18,9 @@ public class Attachment extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Column(name = "messages_id")
-    Long messagesId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "message_id", nullable = false)
+    Message message;
 
     @Column(name = "thumb_url", length = 45)
     String thumbUrl;

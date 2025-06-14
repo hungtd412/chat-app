@@ -168,6 +168,9 @@ function onMessageReceived(payload) {
         
         const conversationId = message.conversationId;
         
+        // Move conversation to top regardless of whether it's active or not
+        moveConversationToTop(conversationId);
+        
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');
         
@@ -181,6 +184,27 @@ function onMessageReceived(payload) {
         }
     } catch (e) {
         console.error('Error processing message:', e);
+    }
+}
+
+/**
+ * Moves a conversation to the top of the conversation list
+ * @param {number} conversationId - The ID of the conversation to move
+ */
+function moveConversationToTop(conversationId) {
+    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationItem.length > 0) {
+        const conversationList = $('#conversation-list');
+        // Only move if it's not already at the top
+        if (conversationItem.index() > 0) {
+            // Clone the conversation item to preserve event handlers
+            const clonedItem = conversationItem.clone(true);
+            // Remove the original
+            conversationItem.remove();
+            // Prepend the clone to the list (add to top)
+            conversationList.prepend(clonedItem);
+            console.log(`Moved conversation ${conversationId} to the top`);
+        }
     }
 }
 
@@ -201,17 +225,13 @@ function updateUnreadCount(conversationId) {
         if (unreadBadge.length === 0) {
             // Create badge if it doesn't exist
             conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
-            
-            // Move the conversation to the top of the list if not already there
-            const conversationList = $('#conversation-list');
-            if (conversationItem.index() > 0) {
-                conversationList.prepend(conversationItem);
-            }
         } else {
             // Update existing badge
             const currentCount = parseInt(unreadBadge.text()) || 0;
             unreadBadge.text(currentCount + 1);
         }
+        
+        // Note: Moving the conversation is now handled by moveConversationToTop
     } else {
         // If conversation not in the list (e.g., a new conversation), refresh the conversation list
         loadConversations();
@@ -221,21 +241,29 @@ function updateUnreadCount(conversationId) {
     updatePageTitle();
 }
 
-/**
- * Clears the unread badge for a conversation
- * @param {JQuery} conversationItem - The conversation item element
- */
 function clearUnreadBadge(conversationItem) {
     const unreadBadge = conversationItem.find('.unread-badge');
     if (unreadBadge.length > 0) {
+        const conversationId = conversationItem.data('id');
         unreadBadge.remove();
         updatePageTitle();
+        
+        // Remove this conversation from stored unread counts in session storage
+        const storedCounts = sessionStorage.getItem('unreadCounts');
+        if (storedCounts) {
+            try {
+                const unreadCounts = JSON.parse(storedCounts);
+                if (unreadCounts[conversationId]) {
+                    delete unreadCounts[conversationId];
+                    sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+                }
+            } catch (e) {
+                console.error('Error updating stored unread counts:', e);
+            }
+        }
     }
 }
 
-/**
- * Updates the page title with total unread messages count
- */
 function updatePageTitle() {
     let totalUnread = 0;
     
@@ -312,9 +340,6 @@ function displayConversations(conversations) {
     restoreUnreadCounts();
 }
 
-/**
- * Store unread counts in session storage before page refresh/navigation
- */
 function storeUnreadCounts() {
     const unreadCounts = {};
     
@@ -331,9 +356,6 @@ function storeUnreadCounts() {
     }
 }
 
-/**
- * Restore unread counts from session storage after page load
- */
 function restoreUnreadCounts() {
     const storedCounts = sessionStorage.getItem('unreadCounts');
     if (storedCounts) {
@@ -344,7 +366,7 @@ function restoreUnreadCounts() {
                 const conversationItem = $(`.conversation-item[data-id="${id}"]`);
                 if (conversationItem.length > 0) {
                     conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
-                    conversationItem.addClass('unread');
+                    // Removed adding .unread class since we don't want to change the background
                 }
             }
             
@@ -369,3 +391,37 @@ $(document).ready(function() {
     // Make unread counts persist across page refreshes
     window.addEventListener('unload', storeUnreadCounts);
 });
+
+function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
+    const messageInput = $(`#${messageInputId}`);
+    const messageText = messageInput.val().trim();
+
+    if (!messageText) return;
+
+    // Clear input before sending to make UI more responsive
+    messageInput.val('');
+
+    // Check if we can use WebSocket
+    if (stompClient && stompClient.connected) {
+        console.log('Sending message via WebSocket');
+        const message = {
+            conversationId: conversationId,
+            type: 'TEXT',
+            content: messageText
+        };
+
+        // Add authorization headers when sending the message
+        const headers = {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        };
+
+        // Move the conversation to the top when sending a message too
+        moveConversationToTop(conversationId);
+
+        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    } else {
+        console.error('WebSocket not connected, cannot send message');
+        alert('Connection error. Please refresh the page and try again.');
+        messageInput.val(messageText); // Restore the message text
+    }
+}

@@ -8,7 +8,9 @@ $(document).ready(function() {
         return;
     }
 
+    // Load conversations and establish WebSocket connection
     loadConversations();
+    connectToWebSocket();
 
     // Search functionality
     $('#search-input').on('input', function() {
@@ -55,6 +57,11 @@ $(document).ready(function() {
         const accessToken = localStorage.getItem('access_token');
         const refreshToken = localStorage.getItem('refresh_token');
 
+        // Disconnect WebSocket before logout
+        if (stompClient && stompClient.connected) {
+            stompClient.disconnect();
+        }
+        
         $.ajax({
             url: 'http://localhost:9000/auth/log-out',
             type: 'POST',
@@ -84,6 +91,110 @@ $(document).ready(function() {
         });
     });
 });
+
+let stompClient = null;
+
+function connectToWebSocket() {
+    // Get JWT token for authentication
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+        console.error('No token found, cannot establish WebSocket connection');
+        return;
+    }
+    
+    // Fix the WebSocket URL to include the full URL with port
+    const socket = new SockJS('http://localhost:9000/ws');
+    stompClient = Stomp.over(socket);
+    
+    // Store in global window object for access from other pages
+    window.stompClient = stompClient;
+    
+    // Disable debug messages
+    stompClient.debug = null;
+    
+    // Add JWT authentication header
+    const headers = {
+        'Authorization': 'Bearer ' + token
+    };
+    
+    // Connect to the WebSocket and subscribe to personal queue
+    stompClient.connect(headers, function(frame) {
+        console.log('Connected to WebSocket');
+        
+        // Get username from token
+        const username = getUsernameFromToken(token);
+        if (username) {
+            // Subscribe to personal queue for private messages using username
+            stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
+            console.log(`Subscribed to /user/${username}/queue/messages`);
+        }
+    }, function(error) {
+        console.error('WebSocket connection error: ', error);
+        // Reconnect after delay
+        setTimeout(connectToWebSocket, 5000);
+    });
+}
+
+// Renamed function to getUsernameFromToken for better clarity
+function getUsernameFromToken(token) {
+    // Extract username from JWT token
+    try {
+        // JWT token consists of 3 parts separated by dots
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+            return null;
+        }
+        
+        // The second part contains the payload
+        const payload = JSON.parse(atob(tokenParts[1]));
+        return payload.sub; // Return username (subject) instead of userId
+    } catch (e) {
+        console.error('Error extracting username from token', e);
+        return null;
+    }
+}
+
+function onMessageReceived(payload) {
+    console.log('Received message:');
+    
+    try {
+        const message = JSON.parse(payload.body);
+        
+        // Play notification sound
+        playNotificationSound();
+        
+        // Update conversation list to show new message
+        const conversationId = message.conversationId || (message.conversation ? message.conversation.id : null);
+        if (conversationId) {
+            updateUnreadCount(conversationId);
+        }
+    } catch (e) {
+        console.error('Error processing message:', e);
+    }
+}
+
+function playNotificationSound() {
+    // You can implement a sound notification here
+    // const audio = new Audio('../sounds/notification.mp3');
+    // audio.play().catch(e => console.log('Error playing notification sound:', e));
+}
+
+function updateUnreadCount(conversationId) {
+    // Implement logic to update unread message count for a conversation
+    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationItem.length > 0) {
+        let unreadBadge = conversationItem.find('.unread-badge');
+        
+        if (unreadBadge.length === 0) {
+            // Create badge if it doesn't exist
+            conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
+        } else {
+            // Update existing badge
+            const count = parseInt(unreadBadge.text()) + 1;
+            unreadBadge.text(count);
+        }
+    }
+}
 
 function loadConversations() {
     $.ajax({

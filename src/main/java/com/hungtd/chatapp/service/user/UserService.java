@@ -18,4 +18,6 @@ public interface UserService {
     User update(Long id, UserUpdateRequest request);
 
     void delete(Long id);
+
+    boolean isExistById(Long userId);
 }

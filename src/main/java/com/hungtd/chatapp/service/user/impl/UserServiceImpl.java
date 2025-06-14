@@ -33,6 +33,7 @@ public class UserServiceImpl implements UserService {
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
 
+    @Override
     public User create(UserCreationRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -55,11 +56,13 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
     @PreAuthorize("hasRole('ADMIN')")
     public List<User> getAll() {
         return userRepository.findAll();
     }
 
+    @Override
     public User currentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -72,6 +75,7 @@ public class UserServiceImpl implements UserService {
         return user;
     }
 
+    @Override
     @PostAuthorize("returnObject.getUsername() == authentication.getName() or hasRole(\"ADMIN\")")
     public User get(Long id) {
         return userRepository.findById(id)
@@ -79,6 +83,7 @@ public class UserServiceImpl implements UserService {
                 );
     }
 
+    @Override
     public User update(Long id, UserUpdateRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() ->new AppException(ErrorCode.USER_NOT_EXISTED)
@@ -88,10 +93,16 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
     public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
         userRepository.deleteById(user.getId());
+    }
+
+    @Override
+    public boolean isExistById(Long userId) {
+        return userRepository.existsById(userId);
     }
 }

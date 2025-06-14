@@ -3,7 +3,10 @@ package com.hungtd.chatapp.service.conversation.impl;
 import com.hungtd.chatapp.dto.response.ConversationResponse;
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Participant;
+import com.hungtd.chatapp.entity.ParticipantId;
 import com.hungtd.chatapp.entity.User;
+import com.hungtd.chatapp.enums.ErrorCode;
+import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.ConversationMapper;
 import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.ParticipantRepository;
@@ -28,6 +31,23 @@ public class ConversationServiceImpl implements ConversationService {
     ParticipantRepository participantRepository;
     UserRepository userRepository;
     ConversationMapper conversationMapper;
+
+    @Override
+    public boolean isExistById(Long conversationId) {
+        return conversationRepository.existsById(conversationId);
+    }
+
+    @Override
+    public boolean isUserInConversation(Long conversationId, Long userId) {
+        ParticipantId participantId = new ParticipantId(conversationId, userId);
+        return participantRepository.existsById(participantId);
+    }
+
+    @Override
+    public Conversation getConversationById(Long conversationId) {
+        return conversationRepository.findById(conversationId)
+                .orElseThrow(() -> new AppException(ErrorCode.CONVERSATION_NOT_FOUND));
+    }
 
     @Override
     public List<Conversation> getCurrentUserConversations() {

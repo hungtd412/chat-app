@@ -18,7 +18,7 @@ public class MessageRequest {
     private Long conversationId;
     
     @NotBlank(message = "Message content cannot be empty")
-    private String message;
+    private String content; // Changed from message to content
     
     @NotNull(message = "Message type is required")
     private Message.Type type;

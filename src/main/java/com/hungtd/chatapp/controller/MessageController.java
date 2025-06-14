@@ -4,57 +4,58 @@ import com.hungtd.chatapp.dto.request.MessageRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.Message;
+import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.MessageMapper;
 import com.hungtd.chatapp.service.chat.MessageService;
 import com.hungtd.chatapp.service.user.UserService;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.handler.annotation.MessageMapping;
+import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("messages")
 @RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MessageController {
 
-    private final MessageService messageService;
-    private final MessageMapper messageMapper;
-    private final UserService userService;
-    
-    @PostMapping
-    public ResponseEntity<ApiResponse<Message>> sendMessage(@Valid @RequestBody MessageRequest messageRequest) {
-        Message sentMessage = messageService.sendMessage(messageRequest);
-        
-        return ResponseEntity.status(HttpStatus.CREATED).body(
-                ApiResponse.<Message>builder()
-                        .data(sentMessage)
-                        .build()
-        );
-    }
-    
+    MessageService messageService;
+    MessageMapper messageMapper;
+    UserService userService;
+
     @GetMapping("/conversation/{conversationId}")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessagesByConversationId(
             @PathVariable Long conversationId) {
-        List<Message> messages = messageService.getMessagesByConversationId(conversationId);
-        Long currentUserId = userService.currentUser().getId();
+        log.debug("Retrieving messages for conversation: {}", conversationId);
         
-        // Use mapper to convert entities to DTOs and set isBelongCurrentUser field
-        List<MessageResponse> messageResponses = messages.stream()
-                .map(message -> {
-                    MessageResponse response = messageMapper.toMessageResponse(message);
-                    response.setBelongCurrentUser(message.getSenderId().equals(currentUserId));
-                    return response;
-                })
-                .collect(Collectors.toList());
+        // Get messages from service
+        List<Message> messages = messageService.getMessagesByConversationId(conversationId);
+        
+        // Get current user ID for mapping message ownership
+        User currentUser = userService.currentUser();
+        
+        // Use mapper to convert to response DTOs with ownership information
+        List<MessageResponse> messageResponses = messageMapper.toMessageResponseList(messages, currentUser.getId());
         
         return ResponseEntity.ok(
                 ApiResponse.<List<MessageResponse>>builder()
                         .data(messageResponses)
                         .build()
         );
+    }
+
+    @MessageMapping("/chat.send")
+    public void handleChatMessage(@Payload MessageRequest messageRequest, StompHeaderAccessor headerAccessor) {
+        log.debug("Handling chat message for conversation: {}", messageRequest.getConversationId());
+        
+        messageService.processChatMessage(messageRequest, headerAccessor);
     }
 }

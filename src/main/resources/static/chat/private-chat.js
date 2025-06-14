@@ -17,13 +17,19 @@ $(document).ready(function() {
         return;
     }
 
+    // Global WebSocket client
+    window.stompClient = window.stompClient || null;
+    
+    // Try to reconnect to the WebSocket if needed
+    ensureWebSocketConnection();
+
     // Load conversation details and messages
     loadConversationDetails(conversationId);
     loadMessages(conversationId);
 
     // Handle back button
     $('#back-button').click(function() {
-        window.location.href = 'chat-list.html';
+        window.location.href = '../mainscreen/main-screen.html';
     });
 
     // Handle send message
@@ -37,7 +43,146 @@ $(document).ready(function() {
             sendMessage(conversationId);
         }
     });
+
+    function ensureWebSocketConnection() {
+        // Check if we have a global stompClient or need to create a new one
+        if (window.stompClient && window.stompClient.connected) {
+            console.log('Using existing WebSocket connection');
+            subscribeToTopics();
+        } else {
+            console.log('Creating new WebSocket connection');
+            connectToWebSocket();
+        }
+    }
+
+    function connectToWebSocket() {
+        // Get JWT token for authentication
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            console.error('No token found, cannot establish WebSocket connection');
+            return;
+        }
+        
+        // Create the SockJS connection to the WebSocket
+        // Fix the WebSocket URL to match the server configuration
+        const socket = new SockJS('http://localhost:9000/ws');
+        window.stompClient = Stomp.over(socket);
+        
+        // Disable debug messages
+        window.stompClient.debug = null;
+        
+        // Add JWT authentication header
+        const headers = {
+            'Authorization': 'Bearer ' + token
+        };
+        
+        // Connect to the WebSocket and subscribe to personal queue
+        window.stompClient.connect(headers, function(frame) {
+            console.log('Connected to WebSocket');
+            subscribeToTopics();
+        }, function(error) {
+            console.error('WebSocket connection error: ', error);
+            // Reconnect after delay
+            setTimeout(connectToWebSocket, 5000);
+        });
+    }
+
+    function subscribeToTopics() {
+        if (!window.stompClient) return;
+        
+        try {
+            // Get username from token
+            const username = getUsernameFromToken(localStorage.getItem('access_token'));
+
+            if (username) {
+                // Subscribe to the user's private queue using username
+                window.stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
+                console.log(`Subscribed to personal queue for user ${username} : /queue/${username}/queue/messages\``);
+            }
+        
+            // Subscribe to the conversation topic (for group chats)
+            window.stompClient.subscribe(`/topic/conversation.${conversationId}`, onMessageReceived);
+            console.log(`Subscribed to topic for conversation ${conversationId}`);
+        } catch (e) {
+            console.error('Error subscribing to WebSocket topics:', e);
+        }
+    }
+
+    function onMessageReceived(payload) {
+        console.log('Message received via WebSocket:', payload);
+        
+        try {
+            const message = JSON.parse(payload.body);
+            console.log('Parsed message:', message);
+            console.log(message.conversationId)
+            // Only process message if it's for the current conversation
+            if (message.conversationId && message.conversationId == conversationId) {
+                appendNewMessage(message);
+            }
+
+        } catch (error) {
+            console.error('Error processing received message:', error);
+        }
+    }
+
+    function appendNewMessage(message) {
+        console.log('Appending message to chat:', message);
+        const username = getUsernameFromToken(localStorage.getItem('access_token'));
+        const isMine = message.belongCurrentUser;
+        console.log(isMine)
+        
+        const date = new Date(message.createdAt || new Date());
+        const messageDate = formatDate(date);
+        const timeString = formatTime(date);
+        
+        // Check if we need to add a new date divider
+        const lastDateDivider = $('.date-divider:last span').text();
+        if (!lastDateDivider || lastDateDivider !== messageDate) {
+            $('#messages-list').append(`
+                <div class="date-divider">
+                    <span>${messageDate}</span>
+                </div>
+            `);
+        }
+        
+        const messageClass = isMine ? 'outgoing' : 'incoming';
+        const content = message.content;
+        
+        const messageEl = $(`
+            <div class="message ${messageClass}">
+                ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="message-time">${timeString}</div>
+            </div>
+        `);
+        
+        $('#messages-list').append(messageEl);
+        
+        // Scroll to bottom of messages
+        const messagesContainer = $('.messages-container');
+        messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
+    }
 });
+
+// Renamed function to getUsernameFromToken to better reflect what it actually does
+function getUsernameFromToken(token) {
+    if (!token) return null;
+    
+    try {
+        // JWT token consists of 3 parts separated by dots
+        const tokenParts = token.split('.');
+        if (tokenParts.length !== 3) {
+            return null;
+        }
+        
+        // The second part contains the payload
+        const payload = JSON.parse(atob(tokenParts[1]));
+        return payload.sub; // returning the username (subject)
+    } catch (e) {
+        console.error('Error extracting username from token', e);
+        return null;
+    }
+}
 
 function loadConversationDetails(conversationId) {
     $.ajax({
@@ -138,28 +283,65 @@ function sendMessage(conversationId) {
     
     // Clear input before sending to make UI more responsive
     messageInput.val('');
-    
-    $.ajax({
-        url: 'http://localhost:9000/messages',
-        type: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
-            'Content-Type': 'application/json'
-        },
-        data: JSON.stringify({
+
+    // Check if we can use WebSocket
+    if (window.stompClient && window.stompClient.connected) {
+        console.log('Sending message via WebSocket');
+        const message = {
             conversationId: conversationId,
             type: 'TEXT',
-            message: messageText
-        }),
-        success: function(response) {
-            // After successfully sending, reload messages to show new one
-            loadMessages(conversationId);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error sending message:', error);
-            alert('Failed to send message. Please try again.');
-        }
-    });
+            content: messageText // Changed from message to content to match MessageRequest
+        };
+        
+        // Add authorization headers when sending the message
+        const headers = {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        };
+        console.log(headers)
+        
+        window.stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    } else {
+        console.error('WebSocket not connected, cannot send message');
+        alert('Connection error. Please refresh the page and try again.');
+        messageInput.val(messageText); // Restore the message text
+    }
+}
+
+function appendNewMessage(message) {
+    console.log('Appending message to chat:', message);
+    const username = getUsernameFromToken(localStorage.getItem('access_token'));
+    const isMine = message.belongCurrentUser || (message.senderId == username);
+    
+    const date = new Date(message.createdAt || new Date());
+    const messageDate = formatDate(date);
+    const timeString = formatTime(date);
+    
+    // Check if we need to add a new date divider
+    const lastDateDivider = $('.date-divider:last span').text();
+    if (!lastDateDivider || lastDateDivider !== messageDate) {
+        $('#messages-list').append(`
+            <div class="date-divider">
+                <span>${messageDate}</span>
+            </div>
+        `);
+    }
+    
+    const messageClass = isMine ? 'outgoing' : 'incoming';
+    const content = message.content;
+    
+    const messageEl = $(`
+        <div class="message ${messageClass}">
+            ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+            <div class="message-content">${escapeHtml(content)}</div>
+            <div class="message-time">${timeString}</div>
+        </div>
+    `);
+    
+    $('#messages-list').append(messageEl);
+    
+    // Scroll to bottom of messages
+    const messagesContainer = $('.messages-container');
+    messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
 }
 
 function formatDate(date) {
@@ -191,7 +373,10 @@ function formatTime(date) {
 }
 
 function escapeHtml(text) {
-    return text
+    if (text === null || text === undefined) {
+        return '';
+    }
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")

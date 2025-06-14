@@ -31,15 +31,11 @@ $(document).ready(function() {
         $(this).addClass('active');
         
         const conversationId = $(this).data('id');
-        const isPrivate = $(this).data('type') === 'PRIVATE';
+        const conversationType = $(this).data('type');
+        const displayName = $(this).find('.conversation-name').text();
         
-        // Navigate to the appropriate chat window based on conversation type
-        if (isPrivate) {
-            window.location.href = `../chat/private-chat.html?id=${conversationId}`;
-        } else {
-            // For group chats, load in the current view
-            loadConversationMessages(conversationId);
-        }
+        // Load conversation in the chat container
+        loadConversation(conversationId, conversationType, displayName);
     });
 
     // New conversation button click handler
@@ -89,6 +85,20 @@ $(document).ready(function() {
                 window.location.href = '../signin/signin.html';
             }
         });
+    });
+
+    // Send message button click handler
+    $(document).on('click', '#send-message-btn', function() {
+        const conversationId = $(this).data('conversation-id');
+        sendMessage(conversationId);
+    });
+
+    // Send message on Enter key
+    $(document).on('keypress', '#message-input', function(e) {
+        if (e.which === 13) { // Enter key
+            const conversationId = $('#send-message-btn').data('conversation-id');
+            sendMessage(conversationId);
+        }
     });
 });
 
@@ -159,24 +169,71 @@ function onMessageReceived(payload) {
     
     try {
         const message = JSON.parse(payload.body);
+        console.log('Parsed message:', message);
         
         // Play notification sound
         playNotificationSound();
         
         // Update conversation list to show new message
-        const conversationId = message.conversationId || (message.conversation ? message.conversation.id : null);
+        const conversationId = message.conversationId;
+        
         if (conversationId) {
-            updateUnreadCount(conversationId);
+            // Check if we're currently viewing this conversation
+            const activeConversationId = $('#send-message-btn').data('conversation-id');
+            
+            if (activeConversationId && activeConversationId == conversationId) {
+                // If we're viewing this conversation, append the message
+                appendNewMessage(message);
+            } else {
+                // Otherwise, update unread count
+                updateUnreadCount(conversationId);
+            }
         }
     } catch (e) {
         console.error('Error processing message:', e);
     }
 }
 
+function appendNewMessage(message) {
+    console.log('Appending message to chat:', message);
+    const isMine = message.belongCurrentUser;
+    
+    const date = new Date(message.createdAt || new Date());
+    const messageDate = formatDate(date);
+    const timeString = formatTime(date);
+    
+    // Check if we need to add a new date divider
+    const lastDateDivider = $('.date-divider:last span').text();
+    if (!lastDateDivider || lastDateDivider !== messageDate) {
+        $('#messages-list').append(`
+            <div class="date-divider">
+                <span>${messageDate}</span>
+            </div>
+        `);
+    }
+    
+    const messageClass = isMine ? 'outgoing' : 'incoming';
+    const content = message.content;
+    
+    const messageEl = $(`
+        <div class="message ${messageClass}">
+            ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+            <div class="message-content">${escapeHtml(content)}</div>
+            <div class="message-time">${timeString}</div>
+        </div>
+    `);
+    
+    $('#messages-list').append(messageEl);
+    
+    // Scroll to bottom of messages
+    const messagesContainer = $('.messages-container');
+    messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
+}
+
 function playNotificationSound() {
     // You can implement a sound notification here
-    // const audio = new Audio('../sounds/notification.mp3');
-    // audio.play().catch(e => console.log('Error playing notification sound:', e));
+    const audio = new Audio('../sound/new-message-notification.mp3');
+    audio.play().catch(e => console.log('Error playing notification sound:', e));
 }
 
 function updateUnreadCount(conversationId) {
@@ -243,39 +300,183 @@ function displayConversations(conversations) {
     });
 }
 
-function loadConversationMessages(conversationId) {
-    // Clear the chat container
+function loadConversation(conversationId, conversationType, displayName) {
+    // Clear the chat container and show loading
     const chatContainer = $('#chat-container');
     chatContainer.html('<div class="loading">Loading messages...</div>');
     
-    // In a real implementation, you would load messages from the server here
-    // For now, just display a placeholder
-    setTimeout(() => {
-        chatContainer.html(`
-            <div class="chat-header">
-                <h3>Conversation #${conversationId}</h3>
+    // Set the chat UI with the information we already have
+    const isPrivate = conversationType === 'PRIVATE';
+    const statusText = isPrivate ? 'Online' : 'Group chat';
+    
+    // Create chat UI
+    chatContainer.html(`
+        <div class="chat-header">
+            <div class="chat-header-info">
+                <h3 id="chat-title">${displayName}</h3>
+                <div class="status">${statusText}</div>
             </div>
-            <div class="messages-container">
-                <div class="messages-list">
-                    <div class="message-timestamp">Today</div>
-                    <div class="message received">
-                        <div class="message-content">Hello! This is a placeholder message.</div>
-                        <div class="message-time">10:30 AM</div>
-                    </div>
-                    <div class="message sent">
-                        <div class="message-content">This is just a demo. Real messaging will be implemented soon!</div>
-                        <div class="message-time">10:32 AM</div>
-                    </div>
+        </div>
+        <div class="messages-container">
+            <div id="messages-list" class="messages-list">
+                <!-- Messages will be loaded here -->
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button id="send-message-btn" data-conversation-id="${conversationId}">
+                <i class="fas fa-paper-plane"></i>
+            </button>
+        </div>
+    `);
+    
+    // Load messages for this conversation
+    loadMessages(conversationId);
+    
+    // Subscribe to conversation topic for group chats
+    if (conversationType === 'GROUP') {
+        if (stompClient && stompClient.connected) {
+            stompClient.subscribe(`/topic/conversation.${conversationId}`, onMessageReceived);
+            console.log(`Subscribed to topic for conversation ${conversationId}`);
+        }
+    }
+}
+
+function loadMessages(conversationId) {
+    $('#messages-list').html('<div class="loading-messages">Loading messages...</div>');
+    
+    $.ajax({
+        url: `http://localhost:9000/messages/conversation/${conversationId}`,
+        type: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        },
+        success: function(response) {
+            displayMessages(response.data);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading messages:', error);
+            $('#messages-list').html('<div class="error-messages">Error loading messages. Please try again later.</div>');
+        }
+    });
+}
+
+function displayMessages(messages) {
+    if (!messages || messages.length === 0) {
+        $('#messages-list').html('<div class="empty-messages">No messages yet</div>');
+        return;
+    }
+
+    const messagesListEl = $('#messages-list');
+    messagesListEl.empty();
+    
+    // Sort messages by id in ascending order (oldest first)
+    // Even though API returns in descending order, for display we want ascending
+    const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
+    
+    let currentDate = '';
+    sortedMessages.forEach(message => {
+        const date = new Date(message.createdAt);
+        const messageDate = formatDate(date);
+        
+        // Add date divider if this is a new date
+        if (messageDate !== currentDate) {
+            currentDate = messageDate;
+            messagesListEl.append(`
+                <div class="date-divider">
+                    <span>${messageDate}</span>
                 </div>
-            </div>
-            <div class="message-input-container">
-                <input type="text" id="message-input" placeholder="Type a message...">
-                <button id="send-message-btn">
-                    <i class="fas fa-paper-plane"></i>
-                </button>
+            `);
+        }
+        
+        const messageClass = message.belongCurrentUser ? 'outgoing' : 'incoming';
+        const timeString = formatTime(date);
+        
+        const messageEl = $(`
+            <div class="message ${messageClass}">
+                ${!message.belongCurrentUser ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+                <div class="message-content">${escapeHtml(message.content)}</div>
+                <div class="message-time">${timeString}</div>
             </div>
         `);
-    }, 1000);
+        
+        messagesListEl.append(messageEl);
+    });
+    
+    // Scroll to bottom of messages
+    const messagesContainer = $('.messages-container');
+    messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
+}
+
+function sendMessage(conversationId) {
+    const messageInput = $('#message-input');
+    const messageText = messageInput.val().trim();
+    
+    if (!messageText) return;
+    
+    // Clear input before sending to make UI more responsive
+    messageInput.val('');
+
+    // Check if we can use WebSocket
+    if (stompClient && stompClient.connected) {
+        console.log('Sending message via WebSocket');
+        const message = {
+            conversationId: conversationId,
+            type: 'TEXT',
+            content: messageText
+        };
+        
+        // Add authorization headers when sending the message
+        const headers = {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        };
+        
+        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    } else {
+        console.error('WebSocket not connected, cannot send message');
+        alert('Connection error. Please refresh the page and try again.');
+        messageInput.val(messageText); // Restore the message text
+    }
+}
+
+function formatDate(date) {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+        return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+    } else {
+        // Format: June 12, 2023
+        return date.toLocaleDateString('en-US', { 
+            month: 'long', 
+            day: 'numeric', 
+            year: 'numeric' 
+        });
+    }
+}
+
+function formatTime(date) {
+    // Format: 10:30 AM
+    return date.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+    });
+}
+
+function escapeHtml(text) {
+    if (text === null || text === undefined) {
+        return '';
+    }
+    return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 function getAvatarInitial(name) {

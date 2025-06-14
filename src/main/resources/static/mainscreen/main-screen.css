@@ -199,6 +199,158 @@ body {
     margin-right: 8px;
 }
 
+/* Chat UI Styles */
+.chat-header {
+    padding: 15px;
+    background-color: #4a76a8;
+    color: white;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid #3b5998;
+}
+
+.chat-header-info {
+    flex-grow: 1;
+}
+
+#chat-title {
+    margin-bottom: 5px;
+    font-size: 18px;
+}
+
+.status {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.messages-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    background-color: #f0f2f5;
+}
+
+.messages-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.message {
+    max-width: 70%;
+    padding: 10px 15px;
+    margin: 5px 0;
+    border-radius: 18px;
+    position: relative;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.message.incoming {
+    align-self: flex-start;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+}
+
+.message.outgoing {
+    align-self: flex-end;
+    background-color: #dcf8c6;
+    border: 1px solid #c7f1a7;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #999;
+    margin-top: 5px;
+    text-align: right;
+}
+
+.message-sender {
+    font-size: 12px;
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #4a76a8;
+}
+
+.empty-messages {
+    text-align: center;
+    color: #999;
+    padding: 20px;
+}
+
+.date-divider {
+    text-align: center;
+    margin: 10px 0;
+    position: relative;
+}
+
+.date-divider span {
+    background-color: #f0f2f5;
+    padding: 0 10px;
+    font-size: 12px;
+    color: #777;
+    position: relative;
+    z-index: 2;
+}
+
+.date-divider::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background-color: #ddd;
+    z-index: 1;
+}
+
+.chat-input-container {
+    padding: 10px 15px;
+    display: flex;
+    border-top: 1px solid #e0e0e0;
+    background-color: #fff;
+}
+
+#message-input {
+    flex-grow: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    outline: none;
+    margin-right: 10px;
+    font-size: 14px;
+}
+
+#send-message-btn {
+    background-color: #4a76a8;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.unread-badge {
+    background-color: #f44336;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    position: absolute;
+    right: 15px;
+    top: 15px;
+}
+
 @media (max-width: 768px) {
     .sidebar {
         width: 100%;

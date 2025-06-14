@@ -245,3 +245,52 @@ function sendMessage(conversationId, stompClient, messageInputId = 'message-inpu
         messageInput.val(messageText); // Restore the message text
     }
 }
+
+/**
+ * Updates the unread count for a conversation
+ * @param {number} conversationId - The ID of the conversation
+ * @param {boolean} increment - Whether to increment or clear the badge
+ */
+function updateUnreadCountUtil(conversationId, increment = true) {
+    // If mainscreen's updateUnreadCount exists, use it
+    if (typeof window.updateUnreadCount === 'function') {
+        window.updateUnreadCount(conversationId);
+        return;
+    }
+
+    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    
+    if (conversationItem.length > 0) {
+        // Check if there's already an unread badge
+        let unreadBadge = conversationItem.find('.unread-badge');
+        
+        if (increment) {
+            if (unreadBadge.length === 0) {
+                // Create badge if it doesn't exist
+                conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
+            } else {
+                // Update existing badge
+                const currentCount = parseInt(unreadBadge.text()) || 0;
+                unreadBadge.text(currentCount + 1);
+            }
+        } else {
+            // Clear badge
+            if (unreadBadge.length > 0) {
+                unreadBadge.remove();
+            }
+        }
+        
+        // Update title if available
+        if (typeof window.updatePageTitle === 'function') {
+            window.updatePageTitle();
+        }
+    }
+}
+
+/**
+ * Clears the unread badge for a conversation
+ * @param {number} conversationId - The ID of the conversation
+ */
+function clearUnreadBadgeUtil(conversationId) {
+    updateUnreadCountUtil(conversationId, false);
+}

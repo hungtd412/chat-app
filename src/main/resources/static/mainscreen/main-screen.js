@@ -34,8 +34,17 @@ $(document).ready(function() {
         const conversationType = $(this).data('type');
         const displayName = $(this).find('.conversation-name').text();
         
-        // Load chat component in the main content area
-        loadChatComponent(conversationId, conversationType, displayName);
+        // Clear unread badge when conversation is clicked
+        clearUnreadBadge($(this));
+        
+        // Delegate loading the chat component to chat.js
+        loadChatInContainer(
+            $('#chat-container'), 
+            conversationId, 
+            conversationType, 
+            displayName,
+            stompClient
+        );
     });
 
     // New conversation button click handler
@@ -143,55 +152,12 @@ function connectToWebSocket() {
             // Subscribe to personal queue for private messages using username
             stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
             console.log(`Subscribed to /user/${username}/queue/messages`);
-            
-            // After connecting, subscribe to all conversation topics the user belongs to
-            subscribeToAllConversations();
+
         }
     }, function(error) {
         console.error('WebSocket connection error: ', error);
         // Reconnect after delay
         setTimeout(connectToWebSocket, 5000);
-    });
-}
-
-function subscribeToAllConversations() {
-    // Get all conversations the user is part of
-    $.ajax({
-        url: 'http://localhost:9000/conversations',
-        type: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        },
-        success: function(response) {
-            if (response.data && response.data.length > 0) {
-                // Store conversations in local variable
-                userConversations = response.data;
-                
-                // Filter for group conversations and subscribe to each one
-                userConversations.forEach(conversation => {
-                    if (conversation.type === 'GROUP') {
-                        // Create topic ID for subscription check
-                        const topicId = `/topic/conversation.${conversation.id}`;
-                        
-                        // Check if we're already subscribed
-                        if (!window.activeSubscriptions[topicId]) {
-                            // Subscribe to the group conversation topic
-                            const subscription = stompClient.subscribe(topicId, onMessageReceived);
-                            
-                            // Store the subscription
-                            window.activeSubscriptions[topicId] = subscription;
-                            
-                            console.log(`Subscribed to group conversation topic: ${topicId}`);
-                        } else {
-                            console.log(`Already subscribed to topic: ${topicId}`);
-                        }
-                    }
-                });
-            }
-        },
-        error: function(xhr, status, error) {
-            console.error('Error loading conversations for WebSocket subscription:', error);
-        }
     });
 }
 
@@ -206,12 +172,12 @@ function onMessageReceived(payload) {
         const activeConversationId = $('#chat-frame').data('conversation-id');
         
         if (activeConversationId && activeConversationId === conversationId) {
-            // If we're viewing this conversation, append the message
-            appendNewMessage(message);
-        }
-
-        if (!message.belongCurrentUser) {
+            // If we're viewing this conversation, delegate message handling to chat.js
+            handleIncomingMessage(payload, conversationId);
+        } else if (!message.belongCurrentUser) {
+            // Only increment unread count for messages we didn't send
             playNotificationSound();
+            updateUnreadCount(conversationId);
         }
     } catch (e) {
         console.error('Error processing message:', e);
@@ -224,19 +190,65 @@ function playNotificationSound() {
 }
 
 function updateUnreadCount(conversationId) {
-    // Implement logic to update unread message count for a conversation
+    console.log("updateUnreadCount for conversation", conversationId);
+    // Find the conversation item in the list
     const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    
     if (conversationItem.length > 0) {
+        // Check if there's already an unread badge
         let unreadBadge = conversationItem.find('.unread-badge');
         
         if (unreadBadge.length === 0) {
             // Create badge if it doesn't exist
             conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
+            
+            // Move the conversation to the top of the list if not already there
+            const conversationList = $('#conversation-list');
+            if (conversationItem.index() > 0) {
+                conversationList.prepend(conversationItem);
+            }
         } else {
             // Update existing badge
-            const count = parseInt(unreadBadge.text()) + 1;
-            unreadBadge.text(count);
+            const currentCount = parseInt(unreadBadge.text()) || 0;
+            unreadBadge.text(currentCount + 1);
         }
+    } else {
+        // If conversation not in the list (e.g., a new conversation), refresh the conversation list
+        loadConversations();
+    }
+    
+    // Update total unread count in page title
+    updatePageTitle();
+}
+
+/**
+ * Clears the unread badge for a conversation
+ * @param {JQuery} conversationItem - The conversation item element
+ */
+function clearUnreadBadge(conversationItem) {
+    const unreadBadge = conversationItem.find('.unread-badge');
+    if (unreadBadge.length > 0) {
+        unreadBadge.remove();
+        updatePageTitle();
+    }
+}
+
+/**
+ * Updates the page title with total unread messages count
+ */
+function updatePageTitle() {
+    let totalUnread = 0;
+    
+    // Count all unread messages across conversations
+    $('.unread-badge').each(function() {
+        totalUnread += parseInt($(this).text()) || 0;
+    });
+    
+    // Update page title
+    if (totalUnread > 0) {
+        document.title = `(${totalUnread}) Chat Application`;
+    } else {
+        document.title = 'Chat Application';
     }
 }
 
@@ -288,77 +300,72 @@ function displayConversations(conversations) {
                 </div>
                 <div class="conversation-info">
                     <div class="conversation-name">${displayName}</div>
+                    <!-- The unread badge will be added here when needed -->
                 </div>
             </div>
         `;
 
         conversationList.append(conversationItem);
     });
+    
+    // Check if there are any stored unread counts to restore
+    restoreUnreadCounts();
 }
 
-function loadChatComponent(conversationId, conversationType, displayName) {
-    // Clear the chat container and show loading
-    const chatContainer = $('#chat-container');
-    chatContainer.html('<div class="loading">Loading chat...</div>');
-
-    // Load the chat component HTML template
-    $.get('../chat/chat.html', function(template) {
-        // Replace the chat container with the loaded template
-        chatContainer.html(template);
-
-        // Set data attributes for the chat frame
-        $('#chat-frame').attr('data-conversation-id', conversationId);
-        $('#chat-frame').attr('data-conversation-type', conversationType);
-
-        // Set initial UI content
-        $('#chat-title').text(displayName);
-        $('#status-text').text(conversationType === 'PRIVATE' ? 'Online' : 'Group chat');
-
-        // Remove back button since we're in the main screen
-        $('#back-button').hide();
-
-        // Setup event handlers for send button
-        $('#send-button').attr('data-conversation-id', conversationId);
-        $('#send-button').click(function() {
-            sendMessage(conversationId, stompClient, 'message-input');
-        });
-
-        // Setup event handler for enter key in message input
-        $('#message-input').keypress(function(e) {
-            if (e.which === 13) { // Enter key
-                sendMessage(conversationId, stompClient, 'message-input');
-            }
-        });
-
-        // Initialize the chat component using functions from chat.js
-        initializeChat(conversationId, conversationType);
-        
-        // Check if we need to subscribe to group chat topic
-        if (conversationType === 'GROUP') {
-            const topicId = `/topic/conversation.${conversationId}`;
-            
-            // Check if we're already subscribed
-            if (!window.activeSubscriptions[topicId] && stompClient && stompClient.connected) {
-                // Subscribe and store the subscription
-                const subscription = stompClient.subscribe(topicId, onMessageReceived);
-                window.activeSubscriptions[topicId] = subscription;
-                console.log(`Subscribed to topic for conversation ${conversationId} from loadChatComponent`);
-            }
+/**
+ * Store unread counts in session storage before page refresh/navigation
+ */
+function storeUnreadCounts() {
+    const unreadCounts = {};
+    
+    $('.conversation-item').each(function() {
+        const id = $(this).data('id');
+        const badge = $(this).find('.unread-badge');
+        if (badge.length > 0) {
+            unreadCounts[id] = badge.text();
         }
-    })
-    .fail(function(xhr, status, error) {
-        console.error('Error loading chat template:', error);
-        chatContainer.html(`
-            <div class="error-container">
-                <div class="error-icon">
-                    <i class="fas fa-exclamation-circle"></i>
-                </div>
-                <h3>Cannot render the conversation</h3>
-                <p>There was a problem loading the chat interface. Please try again later.</p>
-                <button class="retry-button" onclick="loadChatComponent('${conversationId}', '${conversationType}', '${displayName}')">
-                    <i class="fas fa-sync"></i> Retry
-                </button>
-            </div>
-        `);
     });
+    
+    if (Object.keys(unreadCounts).length > 0) {
+        sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+    }
 }
+
+/**
+ * Restore unread counts from session storage after page load
+ */
+function restoreUnreadCounts() {
+    const storedCounts = sessionStorage.getItem('unreadCounts');
+    if (storedCounts) {
+        try {
+            const unreadCounts = JSON.parse(storedCounts);
+            
+            for (const [id, count] of Object.entries(unreadCounts)) {
+                const conversationItem = $(`.conversation-item[data-id="${id}"]`);
+                if (conversationItem.length > 0) {
+                    conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
+                    conversationItem.addClass('unread');
+                }
+            }
+            
+            // Update the page title
+            updatePageTitle();
+            
+        } catch (e) {
+            console.error('Error restoring unread counts:', e);
+        }
+    }
+}
+
+// Store unread counts when page is unloaded
+$(window).on('beforeunload', function() {
+    storeUnreadCounts();
+});
+
+// Add this to the ready function
+$(document).ready(function() {
+    // ...existing code...
+    
+    // Make unread counts persist across page refreshes
+    window.addEventListener('unload', storeUnreadCounts);
+});

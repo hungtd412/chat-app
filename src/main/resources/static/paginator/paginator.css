@@ -1,0 +1,65 @@
+.paginator {
+    display: flex;
+    flex-direction: column;
+    background-color: #2c3e50;
+    width: 60px;
+    min-width: 60px; /* Prevent width from shrinking */
+    flex-shrink: 0; /* Prevent from shrinking in flex containers */
+    height: 100%;
+    align-items: center;
+    padding: 15px 0;
+    z-index: 100;
+}
+
+.paginator-button {
+    background: transparent;
+    border: none;
+    width: 40px;
+    height: 40px;
+    min-width: 40px; /* Prevent width from shrinking */
+    min-height: 40px; /* Prevent height from shrinking */
+    border-radius: 50%;
+    color: #ecf0f1;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.paginator-button:hover {
+    background-color: #34495e;
+}
+
+.paginator-button.active {
+    background-color: #3498db;
+}
+
+.tooltip {
+    position: absolute;
+    left: 50px;
+    background-color: #2c3e50;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.paginator-button:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Ensure container has the exact width */
+#paginator-container {
+    width: 60px;
+    min-width: 60px; /* Prevent width from shrinking */
+    flex-shrink: 0;  /* Prevent from shrinking in flex containers */
+}

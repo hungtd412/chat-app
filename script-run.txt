@@ -1,5 +1,5 @@
 mvn clean install
-./mvnw spring-boot:run
+mvn spring-boot:run
 docker-compose up
 
 //enter redis cli

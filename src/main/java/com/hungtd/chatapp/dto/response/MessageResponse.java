@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class MessageResponse {
     Long id;
+    Long conversationId;
     Long senderId;
     Message.Type type;
     String content;

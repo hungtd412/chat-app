@@ -36,7 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         // prefixed with "/topic" and "/queue"
         // "/topic" is typically used for messages that are broadcasted to multiple clients
         // "/queue" is typically used for messages targeted at specific users
-        registry.enableSimpleBroker("/topic", "/queue");
+        registry.enableSimpleBroker("/topic", "/queue", "/user");
         
         // Set prefix for messages bound for methods annotated with @MessageMapping
         registry.setApplicationDestinationPrefixes("/app");

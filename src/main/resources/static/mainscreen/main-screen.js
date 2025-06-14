@@ -34,8 +34,8 @@ $(document).ready(function() {
         const conversationType = $(this).data('type');
         const displayName = $(this).find('.conversation-name').text();
         
-        // Load conversation in the chat container
-        loadConversation(conversationId, conversationType, displayName);
+        // Load chat component in the main content area
+        loadChatComponent(conversationId, conversationType, displayName);
     });
 
     // New conversation button click handler
@@ -90,14 +90,14 @@ $(document).ready(function() {
     // Send message button click handler
     $(document).on('click', '#send-message-btn', function() {
         const conversationId = $(this).data('conversation-id');
-        sendMessage(conversationId);
+        sendMessage(conversationId, stompClient);
     });
 
     // Send message on Enter key
     $(document).on('keypress', '#message-input', function(e) {
         if (e.which === 13) { // Enter key
             const conversationId = $('#send-message-btn').data('conversation-id');
-            sendMessage(conversationId);
+            sendMessage(conversationId, stompClient);
         }
     });
 });
@@ -129,10 +129,9 @@ function connectToWebSocket() {
     
     // Connect to the WebSocket and subscribe to personal queue
     stompClient.connect(headers, function(frame) {
-        console.log('Connected to WebSocket');
-        
         // Get username from token
         const username = getUsernameFromToken(token);
+
         if (username) {
             // Subscribe to personal queue for private messages using username
             stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
@@ -145,93 +144,35 @@ function connectToWebSocket() {
     });
 }
 
-// Renamed function to getUsernameFromToken for better clarity
-function getUsernameFromToken(token) {
-    // Extract username from JWT token
-    try {
-        // JWT token consists of 3 parts separated by dots
-        const tokenParts = token.split('.');
-        if (tokenParts.length !== 3) {
-            return null;
-        }
-        
-        // The second part contains the payload
-        const payload = JSON.parse(atob(tokenParts[1]));
-        return payload.sub; // Return username (subject) instead of userId
-    } catch (e) {
-        console.error('Error extracting username from token', e);
-        return null;
-    }
-}
-
 function onMessageReceived(payload) {
-    console.log('Received message:');
-    
     try {
         const message = JSON.parse(payload.body);
-        console.log('Parsed message:', message);
+        console.log('Received message in main-screen:', message);
         
-        // Play notification sound
-        playNotificationSound();
-        
-        // Update conversation list to show new message
         const conversationId = message.conversationId;
         
-        if (conversationId) {
-            // Check if we're currently viewing this conversation
-            const activeConversationId = $('#send-message-btn').data('conversation-id');
+        // Check if we're currently viewing this conversation
+        const activeConversationId = $('#chat-frame').data('conversation-id');
+        
+        if (activeConversationId && activeConversationId == conversationId) {
+            // If we're viewing this conversation, append the message
+            appendNewMessage(message);
             
-            if (activeConversationId && activeConversationId == conversationId) {
-                // If we're viewing this conversation, append the message
-                appendNewMessage(message);
-            } else {
-                // Otherwise, update unread count
-                updateUnreadCount(conversationId);
+            // Play a subtle notification sound for new messages
+            if (!message.belongCurrentUser) {
+                playNotificationSound();
             }
+        } else if (!message.belongCurrentUser) {
+            // Otherwise, update unread count and play notification
+            playNotificationSound();
+            updateUnreadCount(conversationId);
         }
     } catch (e) {
         console.error('Error processing message:', e);
     }
 }
 
-function appendNewMessage(message) {
-    console.log('Appending message to chat:', message);
-    const isMine = message.belongCurrentUser;
-    
-    const date = new Date(message.createdAt || new Date());
-    const messageDate = formatDate(date);
-    const timeString = formatTime(date);
-    
-    // Check if we need to add a new date divider
-    const lastDateDivider = $('.date-divider:last span').text();
-    if (!lastDateDivider || lastDateDivider !== messageDate) {
-        $('#messages-list').append(`
-            <div class="date-divider">
-                <span>${messageDate}</span>
-            </div>
-        `);
-    }
-    
-    const messageClass = isMine ? 'outgoing' : 'incoming';
-    const content = message.content;
-    
-    const messageEl = $(`
-        <div class="message ${messageClass}">
-            ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
-            <div class="message-content">${escapeHtml(content)}</div>
-            <div class="message-time">${timeString}</div>
-        </div>
-    `);
-    
-    $('#messages-list').append(messageEl);
-    
-    // Scroll to bottom of messages
-    const messagesContainer = $('.messages-container');
-    messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
-}
-
 function playNotificationSound() {
-    // You can implement a sound notification here
     const audio = new Audio('../sound/new-message-notification.mp3');
     audio.play().catch(e => console.log('Error playing notification sound:', e));
 }
@@ -300,189 +241,55 @@ function displayConversations(conversations) {
     });
 }
 
-function loadConversation(conversationId, conversationType, displayName) {
+function loadChatComponent(conversationId, conversationType, displayName) {
     // Clear the chat container and show loading
     const chatContainer = $('#chat-container');
-    chatContainer.html('<div class="loading">Loading messages...</div>');
-    
-    // Set the chat UI with the information we already have
-    const isPrivate = conversationType === 'PRIVATE';
-    const statusText = isPrivate ? 'Online' : 'Group chat';
-    
-    // Create chat UI
-    chatContainer.html(`
-        <div class="chat-header">
-            <div class="chat-header-info">
-                <h3 id="chat-title">${displayName}</h3>
-                <div class="status">${statusText}</div>
-            </div>
-        </div>
-        <div class="messages-container">
-            <div id="messages-list" class="messages-list">
-                <!-- Messages will be loaded here -->
-            </div>
-        </div>
-        <div class="chat-input-container">
-            <input type="text" id="message-input" placeholder="Type a message...">
-            <button id="send-message-btn" data-conversation-id="${conversationId}">
-                <i class="fas fa-paper-plane"></i>
-            </button>
-        </div>
-    `);
-    
-    // Load messages for this conversation
-    loadMessages(conversationId);
-    
-    // Subscribe to conversation topic for group chats
-    if (conversationType === 'GROUP') {
-        if (stompClient && stompClient.connected) {
-            stompClient.subscribe(`/topic/conversation.${conversationId}`, onMessageReceived);
-            console.log(`Subscribed to topic for conversation ${conversationId}`);
-        }
-    }
-}
+    chatContainer.html('<div class="loading">Loading chat...</div>');
 
-function loadMessages(conversationId) {
-    $('#messages-list').html('<div class="loading-messages">Loading messages...</div>');
-    
-    $.ajax({
-        url: `http://localhost:9000/messages/conversation/${conversationId}`,
-        type: 'GET',
-        headers: {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        },
-        success: function(response) {
-            displayMessages(response.data);
-        },
-        error: function(xhr, status, error) {
-            console.error('Error loading messages:', error);
-            $('#messages-list').html('<div class="error-messages">Error loading messages. Please try again later.</div>');
-        }
-    });
-}
+    // Load the chat component HTML template
+    $.get('../chat/chat.html', function(template) {
+        // Replace the chat container with the loaded template
+        chatContainer.html(template);
 
-function displayMessages(messages) {
-    if (!messages || messages.length === 0) {
-        $('#messages-list').html('<div class="empty-messages">No messages yet</div>');
-        return;
-    }
+        // Set data attributes for the chat frame
+        $('#chat-frame').attr('data-conversation-id', conversationId);
+        $('#chat-frame').attr('data-conversation-type', conversationType);
 
-    const messagesListEl = $('#messages-list');
-    messagesListEl.empty();
-    
-    // Sort messages by id in ascending order (oldest first)
-    // Even though API returns in descending order, for display we want ascending
-    const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
-    
-    let currentDate = '';
-    sortedMessages.forEach(message => {
-        const date = new Date(message.createdAt);
-        const messageDate = formatDate(date);
-        
-        // Add date divider if this is a new date
-        if (messageDate !== currentDate) {
-            currentDate = messageDate;
-            messagesListEl.append(`
-                <div class="date-divider">
-                    <span>${messageDate}</span>
+        // Set initial UI content
+        $('#chat-title').text(displayName);
+        $('#status-text').text(conversationType === 'PRIVATE' ? 'Online' : 'Group chat');
+
+        // Remove back button since we're in the main screen
+        $('#back-button').hide();
+
+        // Setup event handlers for send button
+        $('#send-button').attr('data-conversation-id', conversationId);
+        $('#send-button').click(function() {
+            sendMessage(conversationId, stompClient, 'message-input');
+        });
+
+        // Setup event handler for enter key in message input
+        $('#message-input').keypress(function(e) {
+            if (e.which === 13) { // Enter key
+                sendMessage(conversationId, stompClient, 'message-input');
+            }
+        });
+
+        initializeChat(conversationId, conversationType);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('Error loading chat template:', error);
+        chatContainer.html(`
+            <div class="error-container">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
                 </div>
-            `);
-        }
-        
-        const messageClass = message.belongCurrentUser ? 'outgoing' : 'incoming';
-        const timeString = formatTime(date);
-        
-        const messageEl = $(`
-            <div class="message ${messageClass}">
-                ${!message.belongCurrentUser ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
-                <div class="message-content">${escapeHtml(message.content)}</div>
-                <div class="message-time">${timeString}</div>
+                <h3>Cannot render the conversation</h3>
+                <p>There was a problem loading the chat interface. Please try again later.</p>
+                <button class="retry-button" onclick="loadChatComponent('${conversationId}', '${conversationType}', '${displayName}')">
+                    <i class="fas fa-sync"></i> Retry
+                </button>
             </div>
         `);
-        
-        messagesListEl.append(messageEl);
     });
-    
-    // Scroll to bottom of messages
-    const messagesContainer = $('.messages-container');
-    messagesContainer.scrollTop(messagesContainer.prop('scrollHeight'));
-}
-
-function sendMessage(conversationId) {
-    const messageInput = $('#message-input');
-    const messageText = messageInput.val().trim();
-    
-    if (!messageText) return;
-    
-    // Clear input before sending to make UI more responsive
-    messageInput.val('');
-
-    // Check if we can use WebSocket
-    if (stompClient && stompClient.connected) {
-        console.log('Sending message via WebSocket');
-        const message = {
-            conversationId: conversationId,
-            type: 'TEXT',
-            content: messageText
-        };
-        
-        // Add authorization headers when sending the message
-        const headers = {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        };
-        
-        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
-    } else {
-        console.error('WebSocket not connected, cannot send message');
-        alert('Connection error. Please refresh the page and try again.');
-        messageInput.val(messageText); // Restore the message text
-    }
-}
-
-function formatDate(date) {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (date.toDateString() === today.toDateString()) {
-        return 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
-        return 'Yesterday';
-    } else {
-        // Format: June 12, 2023
-        return date.toLocaleDateString('en-US', { 
-            month: 'long', 
-            day: 'numeric', 
-            year: 'numeric' 
-        });
-    }
-}
-
-function formatTime(date) {
-    // Format: 10:30 AM
-    return date.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit',
-        hour12: true 
-    });
-}
-
-function escapeHtml(text) {
-    if (text === null || text === undefined) {
-        return '';
-    }
-    return String(text)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
-}
-
-function getAvatarInitial(name) {
-    if (!name || name === '') {
-        return '?';
-    }
-    const initials = name.split(' ').map(part => part[0]).join('');
-    return initials.substring(0, 2).toUpperCase();
 }

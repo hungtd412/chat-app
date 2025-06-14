@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Friend Management</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../paginator/paginator.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        html, body {
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        #paginator-container {
+            width: 60px;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f0f2f5;
+        }
+
+        .friend-management-header {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .friend-management-header h1 {
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background-color: transparent;
+            font-size: 16px;
+            font-weight: 500;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+        }
+
+        .tab-button.active {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #7f8c8d;
+        }
+
+        .search-container {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        #friend-search {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px 0 0 20px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #search-button {
+            padding: 10px 20px;
+            background-color: #3498db;
+            border: none;
+            color: white;
+            border-radius: 0 20px 20px 0;
+            cursor: pointer;
+        }
+
+        .search-placeholder {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 30px;
+        }
+
+        .friend-card {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .friend-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #3498db;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .friend-info {
+            flex: 1;
+        }
+
+        .friend-name {
+            font-weight: bold;
+        }
+
+        .friend-username {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .friend-actions {
+            display: flex;
+        }
+
+        .action-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        .accept-button {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .reject-button {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .add-button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .message-button {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .remove-button {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .no-friends, .no-requests {
+            text-align: center;
+            color: #7f8c8d;
+            padding: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="paginator-container"></div>
+        <div class="main-content">
+            <div class="friend-management-header">
+                <h1>Friend Management</h1>
+            </div>
+            <div class="tabs">
+                <button class="tab-button active" data-tab="friends-list">My Friends</button>
+                <button class="tab-button" data-tab="friend-requests">Friend Requests</button>
+                <button class="tab-button" data-tab="find-friends">Find Friends</button>
+            </div>
+            <div class="tab-content active" id="friends-list">
+                <h2>My Friends</h2>
+                <div class="friends-container">
+                    <div class="loading">Loading friends...</div>
+                </div>
+            </div>
+            <div class="tab-content" id="friend-requests">
+                <h2>Friend Requests</h2>
+                <div class="requests-container">
+                    <div class="loading">Loading friend requests...</div>
+                </div>
+            </div>
+            <div class="tab-content" id="find-friends">
+                <h2>Find Friends</h2>
+                <div class="search-container">
+                    <input type="text" id="friend-search" placeholder="Search by username or name">
+                    <button id="search-button">Search</button>
+                </div>
+                <div class="search-results">
+                    <div class="search-placeholder">Search for friends above</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Check if user is logged in by verifying token in localStorage
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                window.location.href = '../signin/signin.html';
+                return;
+            }
+            
+            // Load paginator into the container
+            $('#paginator-container').load('../paginator/paginator.html', function() {
+                // Set the active button based on the current page
+                $(`.paginator-button[data-page="friends"]`).addClass('active');
+                
+                // Handle paginator button clicks
+                $('.paginator-button').click(function() {
+                    const page = $(this).data('page');
+                    
+                    // Don't navigate if we're already on the friends page
+                    if (page === 'friends') return;
+                    
+                    // Handle navigation based on which button was clicked
+                    switch(page) {
+                        case 'chat':
+                            window.location.href = '../mainscreen/main-screen.html';
+                            break;
+                        case 'profile':
+                            window.location.href = '../profile/profile.html';
+                            break;
+                    }
+                });
+            });
+            
+            // Tab handling
+            $('.tab-button').click(function() {
+                const tabId = $(this).data('tab');
+                
+                // Update active tab button
+                $('.tab-button').removeClass('active');
+                $(this).addClass('active');
+                
+                // Show the selected tab content
+                $('.tab-content').removeClass('active');
+                $(`#${tabId}`).addClass('active');
+                
+                // Load content based on selected tab
+                if (tabId === 'friends-list') {
+                    loadFriends();
+                } else if (tabId === 'friend-requests') {
+                    loadFriendRequests();
+                }
+            });
+            
+            // Initial content load
+            loadFriends();
+            
+            // Search button click handler
+            $('#search-button').click(function() {
+                const searchTerm = $('#friend-search').val().trim();
+                if (searchTerm) {
+                    searchUsers(searchTerm);
+                }
+            });
+            
+            // Search on enter key
+            $('#friend-search').keypress(function(e) {
+                if (e.which === 13) {
+                    const searchTerm = $(this).val().trim();
+                    if (searchTerm) {
+                        searchUsers(searchTerm);
+                    }
+                }
+            });
+            
+            // Function to load friends list
+            function loadFriends() {
+                $('.friends-container').html('<div class="loading">Loading friends...</div>');
+                
+                $.ajax({
+                    url: 'http://localhost:9000/friends',
+                    type: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        if (response.data && response.data.length > 0) {
+                            displayFriends(response.data);
+                        } else {
+                            $('.friends-container').html('<div class="no-friends">You don\'t have any friends yet.</div>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading friends:', error);
+                        $('.friends-container').html('<div class="error">Failed to load friends. Please try again later.</div>');
+                    }
+                });
+            }
+            
+            // Function to load friend requests
+            function loadFriendRequests() {
+                $('.requests-container').html('<div class="loading">Loading friend requests...</div>');
+                
+                $.ajax({
+                    url: 'http://localhost:9000/friend-requests',
+                    type: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        if (response.data && response.data.length > 0) {
+                            displayFriendRequests(response.data);
+                        } else {
+                            $('.requests-container').html('<div class="no-requests">No pending friend requests.</div>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error loading friend requests:', error);
+                        $('.requests-container').html('<div class="error">Failed to load friend requests. Please try again later.</div>');
+                    }
+                });
+            }
+            
+            // Function to search users
+            function searchUsers(searchTerm) {
+                $('.search-results').html('<div class="loading">Searching...</div>');
+                
+                $.ajax({
+                    url: `http://localhost:9000/users/search?q=${searchTerm}`,
+                    type: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        if (response.data && response.data.length > 0) {
+                            displaySearchResults(response.data);
+                        } else {
+                            $('.search-results').html('<div class="no-results">No users found matching your search.</div>');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error searching users:', error);
+                        $('.search-results').html('<div class="error">Failed to search users. Please try again later.</div>');
+                    }
+                });
+            }
+            
+            // Function to display friends
+            function displayFriends(friends) {
+                const friendsHtml = friends.map(friend => {
+                    const initials = getInitials(friend.firstName, friend.lastName);
+                    return `
+                        <div class="friend-card" data-id="${friend.id}">
+                            <div class="friend-avatar">${initials}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${friend.firstName} ${friend.lastName}</div>
+                                <div class="friend-username">@${friend.username}</div>
+                            </div>
+                            <div class="friend-actions">
+                                <button class="action-button message-button" data-id="${friend.id}">
+                                    <i class="fas fa-comment"></i> Message
+                                </button>
+                                <button class="action-button remove-button" data-id="${friend.id}">
+                                    <i class="fas fa-user-minus"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                $('.friends-container').html(friendsHtml);
+                
+                // Message button handler
+                $('.message-button').click(function() {
+                    const friendId = $(this).data('id');
+                    // Navigate to chat with this friend
+                    // This would likely create or find an existing conversation
+                    startChatWithFriend(friendId);
+                });
+                
+                // Remove friend button handler
+                $('.remove-button').click(function() {
+                    const friendId = $(this).data('id');
+                    removeFriend(friendId);
+                });
+            }
+            
+            // Function to display friend requests
+            function displayFriendRequests(requests) {
+                const requestsHtml = requests.map(request => {
+                    const initials = getInitials(request.sender.firstName, request.sender.lastName);
+                    return `
+                        <div class="friend-card" data-id="${request.id}">
+                            <div class="friend-avatar">${initials}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${request.sender.firstName} ${request.sender.lastName}</div>
+                                <div class="friend-username">@${request.sender.username}</div>
+                            </div>
+                            <div class="friend-actions">
+                                <button class="action-button accept-button" data-id="${request.id}">
+                                    <i class="fas fa-check"></i> Accept
+                                </button>
+                                <button class="action-button reject-button" data-id="${request.id}">
+                                    <i class="fas fa-times"></i> Reject
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                $('.requests-container').html(requestsHtml);
+                
+                // Accept request button handler
+                $('.accept-button').click(function() {
+                    const requestId = $(this).data('id');
+                    acceptFriendRequest(requestId);
+                });
+                
+                // Reject request button handler
+                $('.reject-button').click(function() {
+                    const requestId = $(this).data('id');
+                    rejectFriendRequest(requestId);
+                });
+            }
+            
+            // Function to display search results
+            function displaySearchResults(users) {
+                const resultsHtml = users.map(user => {
+                    const initials = getInitials(user.firstName, user.lastName);
+                    let actionButton;
+                    
+                    if (user.isFriend) {
+                        actionButton = `
+                            <button class="action-button message-button" data-id="${user.id}">
+                                <i class="fas fa-comment"></i> Message
+                            </button>
+                        `;
+                    } else if (user.hasPendingRequest) {
+                        actionButton = `
+                            <button class="action-button" disabled>
+                                <i class="fas fa-clock"></i> Pending
+                            </button>
+                        `;
+                    } else {
+                        actionButton = `
+                            <button class="action-button add-button" data-id="${user.id}">
+                                <i class="fas fa-user-plus"></i> Add
+                            </button>
+                        `;
+                    }
+                    
+                    return `
+                        <div class="friend-card" data-id="${user.id}">
+                            <div class="friend-avatar">${initials}</div>
+                            <div class="friend-info">
+                                <div class="friend-name">${user.firstName} ${user.lastName}</div>
+                                <div class="friend-username">@${user.username}</div>
+                            </div>
+                            <div class="friend-actions">
+                                ${actionButton}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                $('.search-results').html(resultsHtml);
+                
+                // Add friend button handler
+                $('.add-button').click(function() {
+                    const userId = $(this).data('id');
+                    sendFriendRequest(userId);
+                });
+                
+                // Message button handler in search results
+                $('.search-results .message-button').click(function() {
+                    const friendId = $(this).data('id');
+                    startChatWithFriend(friendId);
+                });
+            }
+            
+            // Helper function to get initials from name
+            function getInitials(firstName, lastName) {
+                return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
+            }
+            
+            // Function to send a friend request
+            function sendFriendRequest(receiverId) {
+                $.ajax({
+                    url: 'http://localhost:9000/friend-requests',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    data: JSON.stringify({
+                        receiverId: receiverId
+                    }),
+                    success: function(response) {
+                        // Update the UI to show pending
+                        const button = $(`.add-button[data-id="${receiverId}"]`);
+                        button.removeClass('add-button').addClass('disabled').prop('disabled', true);
+                        button.html('<i class="fas fa-clock"></i> Pending');
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error sending friend request:', error);
+                        alert('Failed to send friend request. Please try again.');
+                    }
+                });
+            }
+            
+            // Function to accept a friend request
+            function acceptFriendRequest(requestId) {
+                $.ajax({
+                    url: `http://localhost:9000/friend-requests/${requestId}/accept`,
+                    type: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        // Reload friend requests and friends lists
+                        loadFriendRequests();
+                        loadFriends();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error accepting friend request:', error);
+                        alert('Failed to accept friend request. Please try again.');
+                    }
+                });
+            }
+            
+            // Function to reject a friend request
+            function rejectFriendRequest(requestId) {
+                $.ajax({
+                    url: `http://localhost:9000/friend-requests/${requestId}/reject`,
+                    type: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        // Reload friend requests
+                        loadFriendRequests();
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error rejecting friend request:', error);
+                        alert('Failed to reject friend request. Please try again.');
+                    }
+                });
+            }
+            
+            // Function to remove a friend
+            function removeFriend(friendId) {
+                if (confirm('Are you sure you want to remove this friend?')) {
+                    $.ajax({
+                        url: `http://localhost:9000/friends/${friendId}`,
+                        type: 'DELETE',
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        },
+                        success: function(response) {
+                            // Reload friends list
+                            loadFriends();
+                        },
+                        error: function(xhr, status, error) {
+                            console.error('Error removing friend:', error);
+                            alert('Failed to remove friend. Please try again.');
+                        }
+                    });
+                }
+            }
+            
+            // Function to start a chat with a friend
+            function startChatWithFriend(friendId) {
+                $.ajax({
+                    url: `http://localhost:9000/conversations/private/${friendId}`,
+                    type: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    success: function(response) {
+                        // Navigate to main screen with this conversation open
+                        window.location.href = `../mainscreen/main-screen.html?conversation=${response.data.id}`;
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Error starting chat:', error);
+                        alert('Failed to start chat. Please try again.');
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

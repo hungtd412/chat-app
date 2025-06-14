@@ -5,14 +5,23 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     background-color: #f5f5f5;
-    height: 100vh;
 }
 
 .container {
     display: flex;
-    height: 100%;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
 }
 
 .sidebar {
@@ -123,18 +132,22 @@ body {
 }
 
 .main-content {
-    flex-grow: 1;
+    flex: 1;
     padding: 0;
     background-color: #f0f2f5;
     display: flex;
     flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .chat-container {
-    flex-grow: 1;
+    flex: 1;
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
+    overflow: hidden;
 }
 
 .empty-state {
@@ -163,6 +176,54 @@ body {
     color: #f44336;
     text-align: center;
     padding: 20px;
+}
+
+.error-container {
+    text-align: center;
+    color: #777;
+    padding: 40px 20px;
+    margin: auto;
+    max-width: 500px;
+}
+
+.error-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+    color: #f44336;
+}
+
+.error-container h3 {
+    font-size: 24px;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+.error-container p {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 1.5;
+}
+
+.retry-button {
+    background-color: #4a76a8;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s;
+}
+
+.retry-button:hover {
+    background-color: #3b5998;
+}
+
+.retry-button i {
+    margin-right: 8px;
 }
 
 /* Fix logout button styling */
@@ -197,6 +258,21 @@ body {
 
 #logout-button i {
     margin-right: 8px;
+}
+
+.unread-badge {
+    background-color: #f44336;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    position: absolute;
+    right: 15px;
+    top: 15px;
 }
 
 @media (max-width: 768px) {

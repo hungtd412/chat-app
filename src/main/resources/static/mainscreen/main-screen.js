@@ -31,15 +31,11 @@ $(document).ready(function() {
         $(this).addClass('active');
         
         const conversationId = $(this).data('id');
-        const isPrivate = $(this).data('type') === 'PRIVATE';
+        const conversationType = $(this).data('type');
+        const displayName = $(this).find('.conversation-name').text();
         
-        // Navigate to the appropriate chat window based on conversation type
-        if (isPrivate) {
-            window.location.href = `../chat/private-chat.html?id=${conversationId}`;
-        } else {
-            // For group chats, load in the current view
-            loadConversationMessages(conversationId);
-        }
+        // Load chat component in the main content area
+        loadChatComponent(conversationId, conversationType, displayName);
     });
 
     // New conversation button click handler
@@ -90,6 +86,20 @@ $(document).ready(function() {
             }
         });
     });
+
+    // Send message button click handler
+    $(document).on('click', '#send-message-btn', function() {
+        const conversationId = $(this).data('conversation-id');
+        sendMessage(conversationId, stompClient);
+    });
+
+    // Send message on Enter key
+    $(document).on('keypress', '#message-input', function(e) {
+        if (e.which === 13) { // Enter key
+            const conversationId = $('#send-message-btn').data('conversation-id');
+            sendMessage(conversationId, stompClient);
+        }
+    });
 });
 
 let stompClient = null;
@@ -119,10 +129,9 @@ function connectToWebSocket() {
     
     // Connect to the WebSocket and subscribe to personal queue
     stompClient.connect(headers, function(frame) {
-        console.log('Connected to WebSocket');
-        
         // Get username from token
         const username = getUsernameFromToken(token);
+
         if (username) {
             // Subscribe to personal queue for private messages using username
             stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
@@ -135,37 +144,27 @@ function connectToWebSocket() {
     });
 }
 
-// Renamed function to getUsernameFromToken for better clarity
-function getUsernameFromToken(token) {
-    // Extract username from JWT token
-    try {
-        // JWT token consists of 3 parts separated by dots
-        const tokenParts = token.split('.');
-        if (tokenParts.length !== 3) {
-            return null;
-        }
-        
-        // The second part contains the payload
-        const payload = JSON.parse(atob(tokenParts[1]));
-        return payload.sub; // Return username (subject) instead of userId
-    } catch (e) {
-        console.error('Error extracting username from token', e);
-        return null;
-    }
-}
-
 function onMessageReceived(payload) {
-    console.log('Received message:');
-    
     try {
         const message = JSON.parse(payload.body);
+        console.log('Received message in main-screen:', message);
         
-        // Play notification sound
-        playNotificationSound();
+        const conversationId = message.conversationId;
         
-        // Update conversation list to show new message
-        const conversationId = message.conversationId || (message.conversation ? message.conversation.id : null);
-        if (conversationId) {
+        // Check if we're currently viewing this conversation
+        const activeConversationId = $('#chat-frame').data('conversation-id');
+        
+        if (activeConversationId && activeConversationId == conversationId) {
+            // If we're viewing this conversation, append the message
+            appendNewMessage(message);
+            
+            // Play a subtle notification sound for new messages
+            if (!message.belongCurrentUser) {
+                playNotificationSound();
+            }
+        } else if (!message.belongCurrentUser) {
+            // Otherwise, update unread count and play notification
+            playNotificationSound();
             updateUnreadCount(conversationId);
         }
     } catch (e) {
@@ -174,9 +173,8 @@ function onMessageReceived(payload) {
 }
 
 function playNotificationSound() {
-    // You can implement a sound notification here
-    // const audio = new Audio('../sounds/notification.mp3');
-    // audio.play().catch(e => console.log('Error playing notification sound:', e));
+    const audio = new Audio('../sound/new-message-notification.mp3');
+    audio.play().catch(e => console.log('Error playing notification sound:', e));
 }
 
 function updateUnreadCount(conversationId) {
@@ -243,45 +241,55 @@ function displayConversations(conversations) {
     });
 }
 
-function loadConversationMessages(conversationId) {
-    // Clear the chat container
+function loadChatComponent(conversationId, conversationType, displayName) {
+    // Clear the chat container and show loading
     const chatContainer = $('#chat-container');
-    chatContainer.html('<div class="loading">Loading messages...</div>');
-    
-    // In a real implementation, you would load messages from the server here
-    // For now, just display a placeholder
-    setTimeout(() => {
+    chatContainer.html('<div class="loading">Loading chat...</div>');
+
+    // Load the chat component HTML template
+    $.get('../chat/chat.html', function(template) {
+        // Replace the chat container with the loaded template
+        chatContainer.html(template);
+
+        // Set data attributes for the chat frame
+        $('#chat-frame').attr('data-conversation-id', conversationId);
+        $('#chat-frame').attr('data-conversation-type', conversationType);
+
+        // Set initial UI content
+        $('#chat-title').text(displayName);
+        $('#status-text').text(conversationType === 'PRIVATE' ? 'Online' : 'Group chat');
+
+        // Remove back button since we're in the main screen
+        $('#back-button').hide();
+
+        // Setup event handlers for send button
+        $('#send-button').attr('data-conversation-id', conversationId);
+        $('#send-button').click(function() {
+            sendMessage(conversationId, stompClient, 'message-input');
+        });
+
+        // Setup event handler for enter key in message input
+        $('#message-input').keypress(function(e) {
+            if (e.which === 13) { // Enter key
+                sendMessage(conversationId, stompClient, 'message-input');
+            }
+        });
+
+        initializeChat(conversationId, conversationType);
+    })
+    .fail(function(xhr, status, error) {
+        console.error('Error loading chat template:', error);
         chatContainer.html(`
-            <div class="chat-header">
-                <h3>Conversation #${conversationId}</h3>
-            </div>
-            <div class="messages-container">
-                <div class="messages-list">
-                    <div class="message-timestamp">Today</div>
-                    <div class="message received">
-                        <div class="message-content">Hello! This is a placeholder message.</div>
-                        <div class="message-time">10:30 AM</div>
-                    </div>
-                    <div class="message sent">
-                        <div class="message-content">This is just a demo. Real messaging will be implemented soon!</div>
-                        <div class="message-time">10:32 AM</div>
-                    </div>
+            <div class="error-container">
+                <div class="error-icon">
+                    <i class="fas fa-exclamation-circle"></i>
                 </div>
-            </div>
-            <div class="message-input-container">
-                <input type="text" id="message-input" placeholder="Type a message...">
-                <button id="send-message-btn">
-                    <i class="fas fa-paper-plane"></i>
+                <h3>Cannot render the conversation</h3>
+                <p>There was a problem loading the chat interface. Please try again later.</p>
+                <button class="retry-button" onclick="loadChatComponent('${conversationId}', '${conversationType}', '${displayName}')">
+                    <i class="fas fa-sync"></i> Retry
                 </button>
             </div>
         `);
-    }, 1000);
-}
-
-function getAvatarInitial(name) {
-    if (!name || name === '') {
-        return '?';
-    }
-    const initials = name.split(' ').map(part => part[0]).join('');
-    return initials.substring(0, 2).toUpperCase();
+    });
 }

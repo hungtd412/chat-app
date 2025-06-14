@@ -152,12 +152,4 @@ body {
     padding: 20px;
 }
 
-@media (max-width: 768px) {
-    .sidebar {
-        width: 100%;
-    }
-    
-    .main-content {
-        display: none;
-    }
-}
+

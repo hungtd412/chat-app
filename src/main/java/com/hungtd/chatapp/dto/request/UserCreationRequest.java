@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 
@@ -29,12 +30,10 @@ public class UserCreationRequest {
     @NotBlank(message = "EMPTY_PASSWORD")
     String password;
 
-    @Size(min = 3, message = "MIN_FIRSTNAME_LENGTH")
     @Size(max = 20, message = "MAX_FIRSTNAME_LENGTH")
     @NotBlank(message = "EMPTY_FIRSTNAME")
     String firstName;
 
-    @Size(min = 3, message = "MIN_LASTNAME_LENGTH")
     @Size(max = 20, message = "MAX_LASTNAME_LENGTH")
     @NotBlank(message = "EMPTY_LASTNAME")
     String lastName;

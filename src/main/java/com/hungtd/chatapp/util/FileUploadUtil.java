@@ -2,14 +2,9 @@ package com.hungtd.chatapp.util;
 
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
-import lombok.AccessLevel;
-import lombok.experimental.FieldDefaults;
 import lombok.experimental.UtilityClass;
-import org.apache.commons.io.FilenameUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,7 +34,6 @@ public class FileUploadUtil {
         }
 
         final String fileName = file.getOriginalFilename();
-//        final String extension = FilenameUtils.getExtension(fileName);
 
         if (!isAllowedExtenstion(fileName, pattern)) {
             throw new AppException(ErrorCode.INVALID_FILE_TYPE);

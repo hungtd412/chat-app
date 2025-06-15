@@ -56,6 +56,8 @@ public class UserServiceImpl implements UserService {
         User user = userMapper.toUser(request);
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setAvtUrl(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_URL);
+        user.setCloudinaryAvtId(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_PUBLICID);
 
         Set<String> roles = new HashSet<>();
         roles.add(Role.USER.name());

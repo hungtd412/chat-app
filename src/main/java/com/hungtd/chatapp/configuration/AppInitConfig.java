@@ -105,7 +105,7 @@ public class AppInitConfig {
                                 .username("nam")
                                 .password(passwordEncoder.encode("123"))
                                 .firstName("Nam")
-                                .lastName("Hoang")
+                                .lastName("Hoàng")
                                 .dob(LocalDate.of(1991, 7, 8))
                                 .isActive(true)
                                 .roles(new HashSet<>(Collections.singletonList(Role.USER.name())))

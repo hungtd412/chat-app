@@ -1,7 +1,7 @@
 package com.hungtd.chatapp.controller;
 
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
-import com.hungtd.chatapp.dto.request.UserUpdateRequest;
+import com.hungtd.chatapp.dto.request.UpdateNameDobRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.UploadImageResponse;
 import com.hungtd.chatapp.dto.response.UserResponse;
@@ -13,7 +13,6 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -86,17 +85,6 @@ public class UserController {
         );
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<UserResponse>> update(@PathVariable("id") Long id, @RequestBody UserUpdateRequest userUpdateRequest) {
-        User user = userService.update(id, userUpdateRequest);
-
-        return ResponseEntity.status(200).body(
-                ApiResponse.<UserResponse>builder()
-                        .data(userMapper.toUserResponse(user))
-                        .build()
-        );
-    }
-
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") Long id) {
         userService.delete(id);
@@ -107,14 +95,34 @@ public class UserController {
         );
     }
 
-    @PatchMapping(value = "/avatar")
-    public ResponseEntity<ApiResponse<UploadImageResponse>> uploadAvatar(@RequestPart("image") MultipartFile image) {
-        UploadImageResponse response = userService.uploadAvatar(image);
+    @PatchMapping(value = "/me/avatar")
+    public ResponseEntity<ApiResponse<UploadImageResponse>> updateAvatar(@RequestPart("image") MultipartFile image) {
+        UploadImageResponse response = userService.updateAvatar(image);
 
         return ResponseEntity.ok(
                 ApiResponse.<UploadImageResponse>builder()
                         .data(response)
                         .build()
+        );
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<ApiResponse<UserResponse>> updateNameDob(@RequestBody @Valid UpdateNameDobRequest updateNameDobRequest) {
+        User user = userService.updateNameDob(updateNameDobRequest);
+
+        return ResponseEntity.status(200).body(
+                ApiResponse.<UserResponse>builder()
+                        .data(userMapper.toUserResponse(user))
+                        .build()
+        );
+    }
+
+    @DeleteMapping(value = "/me/avatar")
+    public ResponseEntity<ApiResponse<UploadImageResponse>> restoreDefaultAvatar() {
+        userService.restoreDefaultAvatar();
+
+        return ResponseEntity.ok(
+                ApiResponse.<UploadImageResponse>builder().build()
         );
     }
 }

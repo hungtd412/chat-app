@@ -10,6 +10,6 @@ import org.springframework.web.multipart.MultipartFile;
 @NoArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UploadImageRequest {
+public class UpdateImageRequest {
     MultipartFile image;
 }

@@ -23,7 +23,7 @@ public class FriendController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<FriendRequestResponse>> sendFriendRequest(
-            @Valid @RequestBody FriendRequestRequest friendRequestRequest) {
+            @RequestBody @Valid FriendRequestRequest friendRequestRequest) {
         FriendRequestResponse response = friendRequestService.sendFriendRequest(friendRequestRequest);
         
         return ResponseEntity.ok(

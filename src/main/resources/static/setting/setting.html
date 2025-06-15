@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setting</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../paginator/paginator.css">
+    <link rel="stylesheet" href="setting.css">
+</head>
+<body>
+    <div class="container">
+        <div id="paginator-container"></div>
+        <div class="main-content">
+            <div class="setting-header">
+                <h1>Setting</h1>
+            </div>
+            <div class="setting-container">
+                <!-- Tab Navigation -->
+                <div class="tab-navigation">
+                    <button class="tab-button active" data-tab="general-info">General Information</button>
+                    <button class="tab-button" data-tab="avatar">Profile Photo</button>
+                    <button class="tab-button" data-tab="change-password">Change Password</button>
+                    <button class="tab-button" data-tab="change-email">Change Email</button>
+                </div>
+
+                <!-- General Information Tab -->
+                <div id="general-info" class="tab-content active"></div>
+
+                <!-- Avatar Tab -->
+                <div id="avatar" class="tab-content"></div>
+                
+                <!-- Password Change Tab -->
+                <div id="change-password" class="tab-content"></div>
+                
+                <!-- Email Change Tab -->
+                <div id="change-email" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="../utils/exception-handler-util.js"></script>
+    <script src="../utils/notification-util.js"></script>
+    <script src="setting.js"></script>
+</body>
+</html>

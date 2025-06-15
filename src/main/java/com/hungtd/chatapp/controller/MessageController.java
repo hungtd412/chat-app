@@ -8,6 +8,7 @@ import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.MessageMapper;
 import com.hungtd.chatapp.service.chat.MessageService;
 import com.hungtd.chatapp.service.user.UserService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -53,7 +54,7 @@ public class MessageController {
     }
 
     @MessageMapping("/chat.send")
-    public void handleChatMessage(@Payload MessageRequest messageRequest, StompHeaderAccessor headerAccessor) {
+    public void handleChatMessage(@Payload @Valid MessageRequest messageRequest, StompHeaderAccessor headerAccessor) {
         log.debug("Handling chat message for conversation: {}", messageRequest.getConversationId());
         
         messageService.processChatMessage(messageRequest, headerAccessor);

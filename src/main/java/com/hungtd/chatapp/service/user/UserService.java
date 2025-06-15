@@ -1,7 +1,9 @@
 package com.hungtd.chatapp.service.user;
 
+import com.hungtd.chatapp.dto.request.UpdateEmailRequest;
+import com.hungtd.chatapp.dto.request.UpdatePasswordRequest;
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
-import com.hungtd.chatapp.dto.request.UserUpdateRequest;
+import com.hungtd.chatapp.dto.request.UpdateNameDobRequest;
 import com.hungtd.chatapp.dto.response.UploadImageResponse;
 import com.hungtd.chatapp.entity.User;
 import org.springframework.web.multipart.MultipartFile;
@@ -18,11 +20,18 @@ public interface UserService {
 
     User get(Long id);
 
-    User update(Long id, UserUpdateRequest request);
 
     void delete(Long id);
 
     boolean isExistById(Long userId);
-    
-    UploadImageResponse uploadAvatar(MultipartFile image);
+
+    UploadImageResponse updateAvatar(MultipartFile image);
+
+    User updateNameDob(UpdateNameDobRequest request);
+
+    User updatePassword(UpdatePasswordRequest request);
+
+    User updateEmail(UpdateEmailRequest request);
+
+    void restoreDefaultAvatar();
 }

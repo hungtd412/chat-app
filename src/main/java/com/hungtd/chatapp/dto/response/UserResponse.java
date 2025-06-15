@@ -17,5 +17,5 @@ public class UserResponse {
     Boolean isActive;
     Boolean isBlocked;
     String preferences;
-
+    String avtUrl;
 }

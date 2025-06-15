@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,30 @@ public class ConversationServiceImpl implements ConversationService {
     ParticipantRepository participantRepository;
     UserRepository userRepository;
     ConversationMapper conversationMapper;
+
+
+    @Override
+    public void create(Conversation.Type conversationType, String conversationTitle,  List<Long> participantIdsList) {
+        Conversation conversation = Conversation.builder()
+                .title(conversationTitle)
+                .type(conversationType)
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+        final Long conversationId = conversation.getId();
+
+        List<Participant> participantsList = participantIdsList.stream()
+                .map(
+                        participantId -> Participant.builder()
+                        .conversationId(conversationId)
+                        .userId(participantId)
+                        .type(Participant.Type.MEMBER)
+                        .build()
+                )
+                .collect(Collectors.toList());
+
+        participantRepository.saveAll(participantsList);
+    }
 
     @Override
     public boolean isExistById(Long conversationId) {
@@ -56,7 +81,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
     
     @Override
-    public ConversationResponse enrichConversationWithFriendName(Conversation conversation, Long currentUserId) {
+    public ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId) {
         ConversationResponse response = conversationMapper.toConversationResponse(conversation);
         
         // For private conversations, find the other participant and add their name
@@ -71,8 +96,13 @@ public class ConversationServiceImpl implements ConversationService {
                 if (otherUser.isPresent()) {
                     User friend = otherUser.get();
                     response.setFriendName(friend.getFirstName() + " " + friend.getLastName());
+                    response.setImageUrl(friend.getAvtUrl());
                 }
             }
+        } else if (conversation.getType() == Conversation.Type.GROUP) {
+            response.setImageUrl(conversation.getImageUrl());
+        } else {
+            throw new AppException(ErrorCode.INVALID_CONVERSATION_TYPE);
         }
         
         return response;

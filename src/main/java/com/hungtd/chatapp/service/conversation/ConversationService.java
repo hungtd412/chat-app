@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface ConversationService {
 
+    void create(Conversation.Type conversationType, String conversationTitle, List<Long> participantIds);
+
     boolean isExistById(Long conversationId);
 
     boolean isUserInConversation(Long conversationId, Long userId);
@@ -14,5 +16,5 @@ public interface ConversationService {
 
     List<Conversation> getCurrentUserConversations();
 
-    ConversationResponse enrichConversationWithFriendName(Conversation conversation, Long currentUserId);
+    ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId);
 }

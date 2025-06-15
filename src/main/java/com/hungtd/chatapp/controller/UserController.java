@@ -3,6 +3,7 @@ package com.hungtd.chatapp.controller;
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
 import com.hungtd.chatapp.dto.request.UserUpdateRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
+import com.hungtd.chatapp.dto.response.UploadImageResponse;
 import com.hungtd.chatapp.dto.response.UserResponse;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.UserMapper;
@@ -12,9 +13,11 @@ import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -100,6 +103,17 @@ public class UserController {
 
         return ResponseEntity.status(200).body(
                 ApiResponse.<Void>builder()
+                        .build()
+        );
+    }
+
+    @PatchMapping(value = "/avatar")
+    public ResponseEntity<ApiResponse<UploadImageResponse>> uploadAvatar(@RequestPart("image") MultipartFile image) {
+        UploadImageResponse response = userService.uploadAvatar(image);
+
+        return ResponseEntity.ok(
+                ApiResponse.<UploadImageResponse>builder()
+                        .data(response)
                         .build()
         );
     }

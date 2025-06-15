@@ -26,10 +26,10 @@ $(document).ready(function() {
     $(document).on('click', '.conversation-item', function() {
         $('.conversation-item').removeClass('active');
         $(this).addClass('active');
-        
+
         const conversationId = $(this).data('id');
         const isPrivate = $(this).data('type') === 'PRIVATE';
-        
+
         // Navigate to the appropriate chat window based on conversation type
         if (isPrivate) {
             window.location.href = `private-chat.html?id=${conversationId}`;
@@ -75,13 +75,23 @@ function displayConversations(conversations) {
     conversations.forEach(conversation => {
         const isGroup = conversation.type === 'GROUP';
         const displayName = isGroup ? conversation.title : conversation.friendName;
-        const avatarInitial = getAvatarInitial(displayName);
         const avatarClass = isGroup ? 'avatar group-avatar' : 'avatar';
+
+        // Check if imageUrl exists for displaying avatar image
+        const hasAvatarUrl = conversation.imageUrl && conversation.imageUrl.trim() !== '';
+
+        // Create avatar content based on whether an image URL is available
+        let avatarContent = '';
+        if (hasAvatarUrl) {
+            avatarContent = `<img src="${conversation.imageUrl}" alt="${displayName}" class="avatar-img">`;
+        } else {
+            avatarContent = getAvatarInitial(displayName);
+        }
 
         const conversationItem = `
             <div class="conversation-item" data-id="${conversation.id}" data-type="${conversation.type}">
                 <div class="${avatarClass}">
-                    ${avatarInitial}
+                    ${avatarContent}
                 </div>
                 <div class="conversation-info">
                     <div class="conversation-name">${displayName}</div>

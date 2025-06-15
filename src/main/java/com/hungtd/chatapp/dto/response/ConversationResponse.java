@@ -14,4 +14,5 @@ public class ConversationResponse {
     private String title;
     private Conversation.Type type;
     private String friendName;
+    private String imageUrl;
 }

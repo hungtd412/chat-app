@@ -8,9 +8,13 @@ $(document).ready(function() {
         return;
     }
 
-    // Load conversations and establish WebSocket connection
-    loadConversations();
-    connectToWebSocket();
+    // Load chat-list component into sidebar
+    $('#sidebar-container').load('../chat/chat-list.html', function() {
+        console.log('Chat list component loaded');
+        // After loading the component, initialize conversations
+        loadConversations();
+        connectToWebSocket();
+    });
 
     // Search functionality
     $('#search-input').on('input', function() {
@@ -52,50 +56,7 @@ $(document).ready(function() {
         // Navigate to new conversation page or show modal
         alert('New conversation feature coming soon!');
     });
-
-    // Make sure logout button is visible and attached
-    console.log("Logout button element:", $('#logout-button').length);
     
-    // Logout button click handler
-    $('#logout-button').click(function() {
-        console.log("Logout button clicked");
-        const accessToken = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token');
-
-        // Disconnect WebSocket before logout
-        if (stompClient && stompClient.connected) {
-            stompClient.disconnect();
-        }
-        
-        $.ajax({
-            url: 'http://localhost:9000/auth/log-out',
-            type: 'POST',
-            contentType: 'application/json',
-            headers: {
-                'Authorization': 'Bearer ' + accessToken
-            },
-            data: JSON.stringify({
-                accessToken: accessToken,
-                refreshToken: refreshToken
-            }),
-            success: function(response) {
-                // Clear tokens from local storage
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                // Redirect to login page
-                window.location.href = '../signin/signin.html';
-            },
-            error: function(xhr, status, error) {
-                console.error('Logout error:', error);
-                
-                // Even if the server request fails, still clear tokens and redirect
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                window.location.href = '../signin/signin.html';
-            }
-        });
-    });
-
     // Send message button click handler
     $(document).on('click', '#send-message-btn', function() {
         const conversationId = $(this).data('conversation-id');
@@ -108,6 +69,11 @@ $(document).ready(function() {
             const conversationId = $('#send-message-btn').data('conversation-id');
             sendMessage(conversationId, stompClient);
         }
+    });
+    
+    // Logout button click handler
+    $('#logout-button').click(function() {
+        handleLogout();
     });
 });
 
@@ -187,97 +153,9 @@ function onMessageReceived(payload) {
     }
 }
 
-/**
- * Moves a conversation to the top of the conversation list
- * @param {number} conversationId - The ID of the conversation to move
- */
-function moveConversationToTop(conversationId) {
-    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    if (conversationItem.length > 0) {
-        const conversationList = $('#conversation-list');
-        // Only move if it's not already at the top
-        if (conversationItem.index() > 0) {
-            // Clone the conversation item to preserve event handlers
-            const clonedItem = conversationItem.clone(true);
-            // Remove the original
-            conversationItem.remove();
-            // Prepend the clone to the list (add to top)
-            conversationList.prepend(clonedItem);
-            console.log(`Moved conversation ${conversationId} to the top`);
-        }
-    }
-}
-
 function playNotificationSound() {
     const audio = new Audio('../sound/new-message-notification.mp3');
     audio.play().catch(e => console.log('Error playing notification sound:', e));
-}
-
-function updateUnreadCount(conversationId) {
-    console.log("updateUnreadCount for conversation", conversationId);
-    // Find the conversation item in the list
-    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    
-    if (conversationItem.length > 0) {
-        // Check if there's already an unread badge
-        let unreadBadge = conversationItem.find('.unread-badge');
-        
-        if (unreadBadge.length === 0) {
-            // Create badge if it doesn't exist
-            conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
-        } else {
-            // Update existing badge
-            const currentCount = parseInt(unreadBadge.text()) || 0;
-            unreadBadge.text(currentCount + 1);
-        }
-        
-        // Note: Moving the conversation is now handled by moveConversationToTop
-    } else {
-        // If conversation not in the list (e.g., a new conversation), refresh the conversation list
-        loadConversations();
-    }
-    
-    // Update total unread count in page title
-    updatePageTitle();
-}
-
-function clearUnreadBadge(conversationItem) {
-    const unreadBadge = conversationItem.find('.unread-badge');
-    if (unreadBadge.length > 0) {
-        const conversationId = conversationItem.data('id');
-        unreadBadge.remove();
-        updatePageTitle();
-        
-        // Remove this conversation from stored unread counts in session storage
-        const storedCounts = sessionStorage.getItem('unreadCounts');
-        if (storedCounts) {
-            try {
-                const unreadCounts = JSON.parse(storedCounts);
-                if (unreadCounts[conversationId]) {
-                    delete unreadCounts[conversationId];
-                    sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
-                }
-            } catch (e) {
-                console.error('Error updating stored unread counts:', e);
-            }
-        }
-    }
-}
-
-function updatePageTitle() {
-    let totalUnread = 0;
-    
-    // Count all unread messages across conversations
-    $('.unread-badge').each(function() {
-        totalUnread += parseInt($(this).text()) || 0;
-    });
-    
-    // Update page title
-    if (totalUnread > 0) {
-        document.title = `(${totalUnread}) Chat Application`;
-    } else {
-        document.title = 'Chat Application';
-    }
 }
 
 function loadConversations() {
@@ -307,112 +185,13 @@ function loadConversations() {
 }
 
 function displayConversations(conversations) {
-    if (!conversations || conversations.length === 0) {
-        $('#conversation-list').html('<div class="empty-list">No conversations yet</div>');
-        return;
-    }
-
-    const conversationList = $('#conversation-list');
-    conversationList.empty();
-
-    conversations.forEach(conversation => {
-        const isGroup = conversation.type === 'GROUP';
-        const displayName = isGroup ? conversation.title : conversation.friendName;
-        const avatarClass = isGroup ? 'avatar group-avatar' : 'avatar';
-        
-        // Check if imageUrl exists for displaying avatar image
-        const hasAvatarUrl = conversation.imageUrl && conversation.imageUrl.trim() !== '';
-        
-        // Create avatar content based on whether an image URL is available
-        let avatarContent = '';
-        if (hasAvatarUrl) {
-            avatarContent = `<img src="${conversation.imageUrl}" alt="${displayName}" class="avatar-img">`;
-        } else {
-            const avatarInitial = getAvatarInitial(displayName);
-            avatarContent = avatarInitial;
-        }
-
-        const conversationItem = `
-            <div class="conversation-item" data-id="${conversation.id}" data-type="${conversation.type}">
-                <div class="${avatarClass}">
-                    ${avatarContent}
-                </div>
-                <div class="conversation-info">
-                    <div class="conversation-name">${displayName}</div>
-                    <!-- The unread badge will be added here when needed -->
-                </div>
-            </div>
-        `;
-
-        conversationList.append(conversationItem);
-    });
-    
-    // Check if there are any stored unread counts to restore
-    restoreUnreadCounts();
-}
-
-/**
- * Returns the initials to display when no avatar image is available
- */
-function getAvatarInitial(name) {
-    if (!name || name === '') {
-        return '?';
-    }
-    const initials = name.split(' ').map(part => part[0]).join('');
-    return initials.substring(0, 2).toUpperCase();
-}
-
-function storeUnreadCounts() {
-    const unreadCounts = {};
-    
-    $('.conversation-item').each(function() {
-        const id = $(this).data('id');
-        const badge = $(this).find('.unread-badge');
-        if (badge.length > 0) {
-            unreadCounts[id] = badge.text();
-        }
-    });
-    
-    if (Object.keys(unreadCounts).length > 0) {
-        sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
+    // Check if the function exists and call it directly
+    if (window.displayConversationList) {
+        window.displayConversationList(conversations);
+    } else {
+        console.error('displayConversationList function not found');
     }
 }
-
-function restoreUnreadCounts() {
-    const storedCounts = sessionStorage.getItem('unreadCounts');
-    if (storedCounts) {
-        try {
-            const unreadCounts = JSON.parse(storedCounts);
-            
-            for (const [id, count] of Object.entries(unreadCounts)) {
-                const conversationItem = $(`.conversation-item[data-id="${id}"]`);
-                if (conversationItem.length > 0) {
-                    conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
-                    // Removed adding .unread class since we don't want to change the background
-                }
-            }
-            
-            // Update the page title
-            updatePageTitle();
-            
-        } catch (e) {
-            console.error('Error restoring unread counts:', e);
-        }
-    }
-}
-
-// Store unread counts when page is unloaded
-$(window).on('beforeunload', function() {
-    storeUnreadCounts();
-});
-
-// Add this to the ready function
-$(document).ready(function() {
-    // ...existing code...
-    
-    // Make unread counts persist across page refreshes
-    window.addEventListener('unload', storeUnreadCounts);
-});
 
 function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
     const messageInput = $(`#${messageInputId}`);
@@ -446,4 +225,43 @@ function sendMessage(conversationId, stompClient, messageInputId = 'message-inpu
         alert('Connection error. Please refresh the page and try again.');
         messageInput.val(messageText); // Restore the message text
     }
+}
+
+function handleLogout() {
+    console.log("Logout button clicked");
+    const accessToken = localStorage.getItem('access_token');
+    const refreshToken = localStorage.getItem('refresh_token');
+
+    // Disconnect WebSocket before logout
+    if (window.stompClient && window.stompClient.connected) {
+        window.stompClient.disconnect();
+    }
+
+    $.ajax({
+        url: 'http://localhost:9000/auth/log-out',
+        type: 'POST',
+        contentType: 'application/json',
+        headers: {
+            'Authorization': 'Bearer ' + accessToken
+        },
+        data: JSON.stringify({
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        }),
+        success: function(response) {
+            // Clear tokens from local storage
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            // Redirect to login page
+            window.location.href = '../signin/signin.html';
+        },
+        error: function(xhr, status, error) {
+            console.error('Logout error:', error);
+
+            // Even if the server request fails, still clear tokens and redirect
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '../signin/signin.html';
+        }
+    });
 }

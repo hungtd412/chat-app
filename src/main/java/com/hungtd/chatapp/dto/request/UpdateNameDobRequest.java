@@ -15,15 +15,7 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserUpdateRequest {
-    @NotBlank(message = "EMPTY_EMAIL")
-    @Email(message = "INVALID_EMAIL")
-    String email;
-
-    @Size(min = 3, message = "MIN_PASSWORD_LENGTH")
-    @NotBlank(message = "EMPTY_PASSWORD")
-    String password;
-
+public class UpdateNameDobRequest {
     @Size(min = 3, message = "MIN_FIRSTNAME_LENGTH")
     @Size(max = 20, message = "MAX_FIRSTNAME_LENGTH")
     @NotBlank(message = "EMPTY_FIRSTNAME")

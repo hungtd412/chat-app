@@ -1,8 +1,10 @@
 package com.hungtd.chatapp.service.user.impl;
 
 import com.hungtd.chatapp.configuration.CloudinaryConfig;
+import com.hungtd.chatapp.dto.request.UpdateEmailRequest;
+import com.hungtd.chatapp.dto.request.UpdatePasswordRequest;
 import com.hungtd.chatapp.dto.request.UserCreationRequest;
-import com.hungtd.chatapp.dto.request.UserUpdateRequest;
+import com.hungtd.chatapp.dto.request.UpdateNameDobRequest;
 import com.hungtd.chatapp.dto.response.CloudinaryResponse;
 import com.hungtd.chatapp.dto.response.UploadImageResponse;
 import com.hungtd.chatapp.entity.User;
@@ -95,16 +97,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User update(Long id, UserUpdateRequest request) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
-                );
-        userMapper.updateUser(user, request);
-
-        return userRepository.save(user);
-    }
-
-    @Override
     public void delete(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
@@ -118,7 +110,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UploadImageResponse uploadAvatar(MultipartFile image) {
+    public UploadImageResponse updateAvatar(MultipartFile image) {
         final User currentUser = currentUser();
 
         FileUploadUtil.assertAllowed(image, FileUploadUtil.IMAGE_PATTERN);
@@ -145,5 +137,34 @@ public class UserServiceImpl implements UserService {
                 .imageUrl(cloudinaryResponse.getUrl())
                 .cloudinaryId(cloudinaryResponse.getPublicId())
                 .build();
+    }
+
+    @Override
+    public User updateNameDob(UpdateNameDobRequest request) {
+        User user = currentUser();
+
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setDob(request.getDob());
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User updatePassword(UpdatePasswordRequest request) {
+        return null;
+    }
+
+    @Override
+    public User updateEmail(UpdateEmailRequest request) {
+        return null;
+    }
+
+    @Override
+    public void restoreDefaultAvatar() {
+        User user = currentUser();
+        user.setAvtUrl(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_URL);
+        user.setCloudinaryAvtId(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_PUBLICID);
+        userRepository.save(user);
     }
 }

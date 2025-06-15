@@ -1,0 +1,254 @@
+<div class="email-form">
+    <h2>Change Your Email Address</h2>
+    <div class="form-group">
+        <label for="current-email">Current Email Address</label>
+        <input type="email" id="current-email" disabled>
+    </div>
+    <div class="form-group">
+        <label for="new-email">New Email Address</label>
+        <input type="email" id="new-email" placeholder="Enter your new email address">
+        <div id="email-validation-message" class="validation-message"></div>
+    </div>
+    <div class="form-group">
+        <label for="password">Current Password (to verify)</label>
+        <input type="password" id="password" placeholder="Enter your current password">
+    </div>
+    <button class="change-btn" id="change-email-btn">Change Email</button>
+    <div id="email-change-status" class="change-status"></div>
+    <div class="info-box">
+        <div class="info-icon"><i class="fas fa-info-circle"></i></div>
+        <div class="info-text">
+            <p>After changing your email address, you will need to verify the new email before it becomes active.</p>
+            <p>A verification link will be sent to your new email address.</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .email-form {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    .email-form h2 {
+        margin-bottom: 20px;
+        color: #2c3e50;
+        font-size: 22px;
+    }
+    
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+    
+    .form-group input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+    
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+    }
+    
+    .validation-message {
+        margin-top: 5px;
+        font-size: 14px;
+    }
+    
+    .validation-message.valid {
+        color: #2ecc71;
+    }
+    
+    .validation-message.invalid {
+        color: #e74c3c;
+    }
+    
+    .change-btn {
+        background-color: #3498db;
+        color: white;
+        border: none;
+        padding: 14px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        width: 100%;
+        margin-top: 10px;
+        transition: background-color 0.3s;
+    }
+    
+    .change-btn:hover {
+        background-color: #2980b9;
+    }
+    
+    .change-btn:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+    }
+    
+    .change-status {
+        margin-top: 15px;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        text-align: center;
+    }
+    
+    .change-status.success {
+        background-color: #d5f5e3;
+        color: #27ae60;
+    }
+    
+    .change-status.error {
+        background-color: #f8d7da;
+        color: #c0392b;
+    }
+    
+    .info-box {
+        display: flex;
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #eaf2f8;
+        border-radius: 5px;
+        border-left: 4px solid #3498db;
+    }
+    
+    .info-icon {
+        color: #3498db;
+        font-size: 20px;
+        margin-right: 10px;
+    }
+    
+    .info-text p {
+        margin: 5px 0;
+        color: #34495e;
+        font-size: 14px;
+    }
+</style>
+
+<script>
+    $(document).ready(function() {
+        const token = localStorage.getItem('access_token');
+        const changeBtn = $('#change-email-btn');
+        let emailValid = false;
+        
+        // Listen for the profileLoaded event from the parent document
+        $(document).on('profileLoaded', function(event, profile) {
+            $('#current-email').val(profile.email);
+        });
+        
+        // If profile is already loaded in localStorage, use that
+        const savedProfile = localStorage.getItem('user_profile');
+        if (savedProfile) {
+            const profile = JSON.parse(savedProfile);
+            $('#current-email').val(profile.email);
+        }
+        
+        // Handle real-time email validation
+        $('#new-email').on('input', function() {
+            const email = $(this).val();
+            validateEmail(email);
+            updateButtonState();
+        });
+        
+        // Check for password input
+        $('#password').on('input', function() {
+            updateButtonState();
+        });
+        
+        // Validate email format and make sure it's different from current
+        function validateEmail(email) {
+            const currentEmail = $('#current-email').val();
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            const validFormat = emailRegex.test(email);
+            const different = email !== currentEmail;
+            
+            if (!email) {
+                $('#email-validation-message').removeClass('valid invalid').text('');
+                emailValid = false;
+            } else if (!validFormat) {
+                $('#email-validation-message').removeClass('valid').addClass('invalid').text('Please enter a valid email address');
+                emailValid = false;
+            } else if (!different) {
+                $('#email-validation-message').removeClass('valid').addClass('invalid').text('New email must be different from current email');
+                emailValid = false;
+            } else {
+                $('#email-validation-message').removeClass('invalid').addClass('valid').text('Valid email address');
+                emailValid = true;
+            }
+        }
+        
+        // Update button state based on validation
+        function updateButtonState() {
+            if (emailValid && $('#password').val()) {
+                changeBtn.prop('disabled', false);
+            } else {
+                changeBtn.prop('disabled', true);
+            }
+        }
+        
+        // Handle email change submission
+        changeBtn.click(function() {
+            const newEmail = $('#new-email').val();
+            const password = $('#password').val();
+            
+            // Clear any previous status
+            $('#email-change-status').removeClass('success error').text('');
+            
+            // Make API request to change email
+            $.ajax({
+                url: 'http://localhost:9000/users/email',
+                type: 'PUT',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                data: JSON.stringify({
+                    newEmail: newEmail,
+                    password: password
+                }),
+                success: function(response) {
+                    // Show success message
+                    $('#email-change-status').addClass('success').text('Email change request sent! Please check your new email to verify the change.');
+                    
+                    // Clear form fields
+                    $('#new-email').val('');
+                    $('#password').val('');
+                    
+                    // Reset validation states
+                    $('#email-validation-message').removeClass('valid invalid').text('');
+                    emailValid = false;
+                    updateButtonState();
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error changing email:', error);
+                    
+                    // Extract error message from response if available
+                    let errorMessage = 'Failed to change email. Please try again.';
+                    try {
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                    } catch(e) {
+                        console.error('Could not parse error message', e);
+                    }
+                    
+                    $('#email-change-status').addClass('error').text(errorMessage);
+                }
+            });
+        });
+        
+        // Init button state
+        updateButtonState();
+    });
+</script>

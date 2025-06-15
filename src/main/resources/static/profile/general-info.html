@@ -1,0 +1,168 @@
+<div class="profile-form">
+    <div class="loading">Loading profile data...</div>
+    <!-- Profile form will be loaded here -->
+</div>
+
+<style>
+    .profile-form {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #2c3e50;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 16px;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #3498db;
+    }
+
+    .save-btn {
+        background-color: #2ecc71;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 5px;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 20px;
+        transition: background-color 0.3s;
+    }
+
+    .save-btn:hover {
+        background-color: #27ae60;
+    }
+
+    .error-message {
+        color: #e74c3c;
+        background-color: #f8d7da;
+        padding: 10px;
+        border-radius: 5px;
+        margin-top: 15px;
+        font-size: 14px;
+        display: none;
+    }
+</style>
+
+<script src="../utils/exception-handler-util.js"></script>
+<script>
+    $(document).ready(function() {
+        const token = localStorage.getItem('access_token');
+        
+        // Listen for the profileLoaded event from the parent document
+        $(document).on('profileLoaded', function(event, profile) {
+            displayUserProfile(profile);
+        });
+        
+        // If profile is already loaded in localStorage, use that
+        const savedProfile = localStorage.getItem('user_profile');
+        if (savedProfile) {
+            displayUserProfile(JSON.parse(savedProfile));
+        }
+        
+        // Function to display user profile data in the form
+        function displayUserProfile(profile) {
+            // Format date of birth to YYYY-MM-DD for the date input
+            let formattedDob = '';
+            
+            if (profile.dob) {
+                // Handle ISO date format (2025-06-11T00:00:00.000+00:00)
+                if (profile.dob.includes('T')) {
+                    formattedDob = profile.dob.split('T')[0];
+                } 
+                // Handle plain date format (2025-06-11)
+                else {
+                    formattedDob = profile.dob;
+                }
+            }
+            
+            console.log("Original DOB:", profile.dob);
+            console.log("Formatted DOB:", formattedDob);
+            
+            const formHtml = `
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" value="${profile.username}" disabled>
+                </div>
+                <div class="form-group">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" value="${profile.firstName || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" value="${profile.lastName || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth</label>
+                    <input type="date" id="dob" value="${formattedDob}">
+                </div>
+                <button class="save-btn" id="save-profile-btn">Save Changes</button>
+                <div class="error-message" id="profile-update-error"></div>
+            `;
+            
+            $('.profile-form').html(formHtml);
+            
+            // Ensure DOB gets set properly
+            if (formattedDob) {
+                $('#dob').val(formattedDob);
+            }
+            
+            // Add handler for save button
+            $('#save-profile-btn').click(function() {
+                saveProfile();
+            });
+        }
+        
+        // Function to save profile changes
+        function saveProfile() {
+            const profileData = {
+                firstName: $('#firstName').val(),
+                lastName: $('#lastName').val(),
+                dob: $('#dob').val()
+            };
+            
+            // Hide any previous error messages
+            $('#profile-update-error').hide();
+            
+            $.ajax({
+                url: 'http://localhost:9000/users/me',
+                type: 'PATCH',
+                contentType: 'application/json',
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                },
+                data: JSON.stringify(profileData),
+                success: function(response) {
+                    // Update localStorage with new profile data
+                    localStorage.setItem('user_profile', JSON.stringify(response.data));
+                    
+                    // Trigger profileLoaded event to update other components
+                    $(document).trigger('profileLoaded', [response.data]);
+                    
+                    // Show success message
+                    alert('Profile updated successfully');
+                },
+                error: function(xhr, status, error) {
+                    // Use the common error handling utility
+                    handleApiError(xhr, 'profile-update-error', 'Error updating profile. Please try again.');
+                }
+            });
+        }
+    });
+</script>

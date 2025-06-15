@@ -14,6 +14,7 @@ public class UserResponse {
     String email;
     String firstName;
     String lastName;
+    String dob;
     Boolean isActive;
     Boolean isBlocked;
     String preferences;

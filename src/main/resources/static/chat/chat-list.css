@@ -103,6 +103,13 @@ body {
     font-size: 20px;
     margin-right: 15px;
     flex-shrink: 0;
+    overflow: hidden; /* Add this to ensure images stay within the avatar circle */
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This ensures the image covers the full area without distortion */
 }
 
 .group-avatar {
@@ -151,5 +158,3 @@ body {
     color: #777;
     padding: 20px;
 }
-
-

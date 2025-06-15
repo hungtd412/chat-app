@@ -81,7 +81,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
     
     @Override
-    public ConversationResponse enrichConversationWithFriendName(Conversation conversation, Long currentUserId) {
+    public ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId) {
         ConversationResponse response = conversationMapper.toConversationResponse(conversation);
         
         // For private conversations, find the other participant and add their name
@@ -96,8 +96,13 @@ public class ConversationServiceImpl implements ConversationService {
                 if (otherUser.isPresent()) {
                     User friend = otherUser.get();
                     response.setFriendName(friend.getFirstName() + " " + friend.getLastName());
+                    response.setImageUrl(friend.getAvtUrl());
                 }
             }
+        } else if (conversation.getType() == Conversation.Type.GROUP) {
+            response.setImageUrl(conversation.getImageUrl());
+        } else {
+            throw new AppException(ErrorCode.INVALID_CONVERSATION_TYPE);
         }
         
         return response;

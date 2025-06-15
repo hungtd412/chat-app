@@ -202,6 +202,8 @@ public class AppInitConfig {
         // Create a group conversation with everyone
         Conversation groupConv = Conversation.builder()
                 .title("Nhóm bạn thân")
+                .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1749972690/chat_logo_only_icon_lkb588.png")
+                .cloudinaryImageId("chat_logo_only_icon_lkb588")
                 .type(Conversation.Type.GROUP)
                 .build();
 
@@ -211,6 +213,8 @@ public class AppInitConfig {
         // Create another group with Hung, Trang, Thuy
         Conversation smallGroupConv = Conversation.builder()
                 .title("Bạn thân thiết")
+                .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1749972690/chat_logo_only_icon_lkb588.png")
+                .cloudinaryImageId("chat_logo_only_icon_lkb588")
                 .type(Conversation.Type.GROUP)
                 .build();
 

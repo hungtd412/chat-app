@@ -16,5 +16,5 @@ public interface ConversationService {
 
     List<Conversation> getCurrentUserConversations();
 
-    ConversationResponse enrichConversationWithFriendName(Conversation conversation, Long currentUserId);
+    ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId);
 }

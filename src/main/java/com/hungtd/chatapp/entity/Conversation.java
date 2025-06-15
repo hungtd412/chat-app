@@ -20,6 +20,12 @@ public class Conversation {
 
     @Column(length = 40)
     String title;
+
+    @Column(name = "image_url", columnDefinition = "TEXT")
+    String imageUrl;
+
+    @Column(name = "cloudinary_image_id", columnDefinition = "TEXT")
+    String cloudinaryImageId;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "type", length = 8, nullable = false)

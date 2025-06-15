@@ -118,6 +118,13 @@ body {
     font-size: 20px;
     margin-right: 15px;
     flex-shrink: 0;
+    overflow: hidden; /* Ensure images stay within the circle */
+}
+
+.avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* This ensures the image covers the full area without distortion */
 }
 
 .group-avatar {
@@ -289,7 +296,7 @@ body {
     .sidebar {
         width: 100%;
     }
-    
+
     .main-content {
         display: none;
     }

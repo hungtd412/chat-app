@@ -20,8 +20,8 @@ $(document).ready(function() {
                 case 'friends':
                     window.location.href = '../friend-management/friend-management.html';
                     break;
-                case 'profile':
-                    window.location.href = '../setting/profile.html';
+                case 'setting':
+                    window.location.href = '../setting/setting.html';
                     break;
             }
         });
@@ -32,8 +32,8 @@ $(document).ready(function() {
         
         if (path.includes('friend-management')) {
             return 'friends';
-        } else if (path.includes('profile')) {
-            return 'profile';
+        } else if (path.includes('setting')) {
+            return 'setting';
         } else {
             return 'chat'; // Default to chat for main screen
         }

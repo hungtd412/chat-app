@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
+    <title>Setting</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../paginator/paginator.css">
-    <link rel="stylesheet" href="profile.css">
+    <link rel="stylesheet" href="setting.css">
 </head>
 <body>
     <div class="container">
         <div id="paginator-container"></div>
         <div class="main-content">
-            <div class="profile-header">
-                <h1>My Profile</h1>
+            <div class="setting-header">
+                <h1>Setting</h1>
             </div>
-            <div class="profile-container">
+            <div class="setting-container">
                 <!-- Tab Navigation -->
                 <div class="tab-navigation">
                     <button class="tab-button active" data-tab="general-info">General Information</button>
@@ -40,6 +40,8 @@
     </div>
     
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="profile.js"></script>
+    <script src="../utils/exception-handler-util.js"></script>
+    <script src="../utils/notification-util.js"></script>
+    <script src="setting.js"></script>
 </body>
 </html>

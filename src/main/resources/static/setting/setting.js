@@ -9,14 +9,14 @@ $(document).ready(function() {
     // Load paginator into the container
     $('#paginator-container').load('../paginator/paginator.html', function() {
         // Set the active button based on the current page
-        $(`.paginator-button[data-page="profile"]`).addClass('active');
+        $(`.paginator-button[data-page="setting"]`).addClass('active');
         
         // Handle paginator button clicks
         $('.paginator-button').click(function() {
             const page = $(this).data('page');
             
-            // Don't navigate if we're already on the profile page
-            if (page === 'profile') return;
+            // Don't navigate if we're already on the setting page
+            if (page === 'setting') return;
             
             // Handle navigation based on which button was clicked
             switch(page) {

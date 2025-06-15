@@ -21,7 +21,7 @@ $(document).ready(function() {
                     window.location.href = '../friend-management/friend-management.html';
                     break;
                 case 'profile':
-                    window.location.href = '../profile/profile.html';
+                    window.location.href = '../setting/profile.html';
                     break;
             }
         });

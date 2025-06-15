@@ -49,14 +49,20 @@ function displayErrorMessage(containerId, message) {
  * @param {Object} xhr - The XHR object from the AJAX error callback
  * @param {string} errorContainerId - ID of the container to display errors
  * @param {string} defaultMessage - Default message to display if extraction fails
+ * @param {boolean} showPopup - Whether to also show a popup notification (default: false)
  */
-function handleApiError(xhr, errorContainerId, defaultMessage = 'An error occurred. Please try again.') {
+function handleApiError(xhr, errorContainerId, defaultMessage = 'An error occurred. Please try again.', showPopup = false) {
     const errorMessage = extractErrorMessage(xhr, defaultMessage);
     
     if (errorContainerId) {
         displayErrorMessage(errorContainerId, errorMessage);
-    } else {
-        // Fallback to alert if no container is specified
+    }
+    
+    // Show popup if requested
+    if (showPopup && typeof showErrorPopup === 'function') {
+        showErrorPopup(errorMessage);
+    } else if (!errorContainerId) {
+        // Fallback to alert if no container is specified and no popup function available
         alert(errorMessage);
     }
     

@@ -61,6 +61,7 @@
 </style>
 
 <script src="../utils/exception-handler-util.js"></script>
+<script src="../utils/notification-util.js"></script>
 <script>
     $(document).ready(function() {
         const token = localStorage.getItem('access_token');
@@ -155,8 +156,8 @@
                     // Trigger profileLoaded event to update other components
                     $(document).trigger('profileLoaded', [response.data]);
                     
-                    // Show success message
-                    alert('Profile updated successfully');
+                    // Show success popup notification instead of alert
+                    showSuccessPopup('Profile updated successfully');
                 },
                 error: function(xhr, status, error) {
                     // Use the common error handling utility

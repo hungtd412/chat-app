@@ -79,9 +79,42 @@
         margin-top: 15px;
         font-size: 14px;
         text-align: center;
+        padding: 10px;
+        border-radius: 5px;
+        min-height: 20px;
+    }
+
+    .upload-status.success {
+        background-color: #d5f5e3;
+        color: #27ae60;
+    }
+
+    .upload-status.error {
+        background-color: #f8d7da;
+        color: #c0392b;
+    }
+
+    .upload-progress {
+        margin-top: 10px;
+        width: 100%;
+        max-width: 300px;
+        height: 5px;
+        background-color: #ecf0f1;
+        border-radius: 5px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .upload-progress-bar {
+        height: 100%;
+        width: 0;
+        background-color: #3498db;
+        transition: width 0.2s;
     }
 </style>
 
+<script src="../utils/exception-handler-util.js"></script>
+<script src="../utils/notification-util.js"></script>
 <script>
     $(document).ready(function() {
         const token = localStorage.getItem('access_token');
@@ -129,11 +162,12 @@
             const formData = new FormData();
             formData.append('image', file);
             
-            $('#upload-status').text('Uploading...');
+            // Clear any previous status and show loading
+            $('#upload-status').removeClass('success error').text('Uploading...').show();
             
             $.ajax({
-                url: 'http://localhost:9000/users/avatar',
-                type: 'POST',
+                url: 'http://localhost:9000/users/me/avatar',
+                type: 'PATCH',
                 data: formData,
                 processData: false,
                 contentType: false,
@@ -141,35 +175,54 @@
                     'Authorization': 'Bearer ' + token
                 },
                 success: function(response) {
-                    $('#upload-status').text('Avatar uploaded successfully!');
-                    updateAvatarPreview(response.data.imageUrl);
+                    $('#upload-status').removeClass('error').addClass('success').text('Avatar uploaded successfully!');
                     
-                    // Update the profile in localStorage with new avatar URL
-                    const savedProfile = localStorage.getItem('user_profile');
-                    if (savedProfile) {
-                        const profile = JSON.parse(savedProfile);
-                        profile.avtUrl = response.data.imageUrl;
-                        localStorage.setItem('user_profile', JSON.stringify(profile));
+                    // Show success popup notification
+                    showSuccessPopup('Avatar uploaded successfully!');
+                    
+                    // Update the avatar preview with the new URL
+                    if (response.data && response.data.imageUrl) {
+                        updateAvatarPreview(response.data.imageUrl);
+                        
+                        // Update the profile in localStorage with new avatar URL
+                        const savedProfile = localStorage.getItem('user_profile');
+                        if (savedProfile) {
+                            const profile = JSON.parse(savedProfile);
+                            profile.avtUrl = response.data.imageUrl;
+                            localStorage.setItem('user_profile', JSON.stringify(profile));
+                        }
                     }
                 },
                 error: function(xhr, status, error) {
                     console.error('Error uploading avatar:', error);
-                    $('#upload-status').text('Error uploading avatar. Please try again.');
+                    
+                    // Extract error message from response
+                    const errorMessage = extractErrorMessage(xhr, 'Error uploading avatar. Please try again.');
+                    
+                    // Show error in status area and as popup
+                    $('#upload-status').removeClass('success').addClass('error').text(errorMessage);
+                    showErrorPopup(errorMessage);
                 }
             });
         }
         
         // Handle remove avatar
         $('#remove-avatar-btn').click(function() {
+            // Clear previous status
+            $('#upload-status').removeClass('success error').text('Removing...').show();
+            
             $.ajax({
-                url: 'http://localhost:9000/users/avatar',
+                url: 'http://localhost:9000/users/me/avatar',
                 type: 'DELETE',
                 headers: {
                     'Authorization': 'Bearer ' + token
                 },
                 success: function(response) {
                     updateAvatarPreview(null);
-                    $('#upload-status').text('Avatar removed successfully!');
+                    $('#upload-status').removeClass('error').addClass('success').text('Avatar removed successfully!');
+                    
+                    // Show success popup notification
+                    showSuccessPopup('Avatar removed successfully!');
                     
                     // Update the profile in localStorage to remove avatar URL
                     const savedProfile = localStorage.getItem('user_profile');
@@ -181,7 +234,13 @@
                 },
                 error: function(xhr, status, error) {
                     console.error('Error removing avatar:', error);
-                    $('#upload-status').text('Error removing avatar. Please try again.');
+                    
+                    // Extract error message from response
+                    const errorMessage = extractErrorMessage(xhr, 'Error removing avatar. Please try again.');
+                    
+                    // Show error in status area and as popup
+                    $('#upload-status').removeClass('success').addClass('error').text(errorMessage);
+                    showErrorPopup(errorMessage);
                 }
             });
         });

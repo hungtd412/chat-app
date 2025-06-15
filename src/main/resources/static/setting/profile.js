@@ -66,13 +66,18 @@ $(document).ready(function() {
                 
                 // Trigger custom event that tab components can listen for
                 $(document).trigger('profileLoaded', [response.data]);
+                
+                // Optionally show a notification that profile loaded
+                // showSuccessPopup('Profile loaded successfully');
             },
             error: function(xhr, status, error) {
                 console.error('Error loading profile:', error);
                 
                 // Extract error message from the response
                 const errorMessage = extractErrorMessage(xhr, 'Error loading profile data. Please try again later.');
-                alert(errorMessage);
+                
+                // Use popup instead of alert
+                showErrorPopup(errorMessage);
             }
         });
     }

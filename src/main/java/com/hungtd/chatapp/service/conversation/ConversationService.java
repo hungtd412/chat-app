@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface ConversationService {
 
+    void create(Conversation.Type conversationType, String conversationTitle, List<Long> participantIds);
+
     boolean isExistById(Long conversationId);
 
     boolean isUserInConversation(Long conversationId, Long userId);

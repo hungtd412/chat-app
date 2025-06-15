@@ -67,8 +67,16 @@ public enum ErrorCode {
     USER_NOT_IN_CONVERSATION(1081, "Bạn không phải là thành viên của cuộc hội thoại này!", 403),
     RECEIVER_NOT_FOUND(1082, "Không tìm thấy người nhận!", 400),
     INVALID_CONVERSATION_TYPE(1083, "Loại cuộc hội thoại không hợp lệ!", 400),
-    MESSAGE_SENDING_ERROR(1084, "Có lỗi xảy ra khi gửi tin nhắn", 500)
+    MESSAGE_SENDING_ERROR(1084, "Có lỗi xảy ra khi gửi tin nhắn", 500),
+
+    //UPLOAD FILE 109X
+    UPLOAD_FILE_FAIL(1090, "Có lỗi xảy ra khi tải lên file!", 500),
+    DELETE_FILE_FAIL(1091, "Có lỗi xảy ra khi xóa file!", 500),
+    INVALID_FILE_TYPE(1092, "Định dạng file không hợp lệ!", 400),
+    MAX_FILE_SIZE(1093, "Kích thước file tối đa là 20MB!", 400)
     ;
+
+
 
     int code;
     String message;

@@ -21,6 +21,6 @@ public interface ParticipantRepository extends JpaRepository<Participant, Partic
     
     @Query("SELECT p FROM Participant p WHERE p.conversationId = :conversationId")
     List<Participant> findByConversationId(@Param("conversationId") Long conversationId);
-    
-    // The existsById method is now correctly inherited from JpaRepository<Participant, ParticipantId>
+
+
 }

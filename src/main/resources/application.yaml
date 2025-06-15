@@ -22,6 +22,10 @@ spring:
       static-locations: classpath:/static/
   mvc:
     static-path-pattern: /**
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 21MB
 
 server:
   port: 9000

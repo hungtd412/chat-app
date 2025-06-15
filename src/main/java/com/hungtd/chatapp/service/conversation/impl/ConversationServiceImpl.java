@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +32,30 @@ public class ConversationServiceImpl implements ConversationService {
     ParticipantRepository participantRepository;
     UserRepository userRepository;
     ConversationMapper conversationMapper;
+
+
+    @Override
+    public void create(Conversation.Type conversationType, String conversationTitle,  List<Long> participantIdsList) {
+        Conversation conversation = Conversation.builder()
+                .title(conversationTitle)
+                .type(conversationType)
+                .build();
+
+        conversation = conversationRepository.save(conversation);
+        final Long conversationId = conversation.getId();
+
+        List<Participant> participantsList = participantIdsList.stream()
+                .map(
+                        participantId -> Participant.builder()
+                        .conversationId(conversationId)
+                        .userId(participantId)
+                        .type(Participant.Type.MEMBER)
+                        .build()
+                )
+                .collect(Collectors.toList());
+
+        participantRepository.saveAll(participantsList);
+    }
 
     @Override
     public boolean isExistById(Long conversationId) {

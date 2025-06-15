@@ -5,18 +5,17 @@ import com.hungtd.chatapp.dto.response.FriendRequestResponse;
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Friend;
 import com.hungtd.chatapp.entity.FriendRequest;
-import com.hungtd.chatapp.entity.Participant;
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.enums.FriendRequestStatus;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.FriendRequestMapper;
-import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.FriendRepository;
 import com.hungtd.chatapp.repository.FriendRequestRepository;
-import com.hungtd.chatapp.repository.ParticipantRepository;
 import com.hungtd.chatapp.repository.UserRepository;
+import com.hungtd.chatapp.service.conversation.ConversationService;
 import com.hungtd.chatapp.service.friend.FriendRequestService;
+import com.hungtd.chatapp.service.user.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -24,7 +23,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -38,10 +38,11 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     UserRepository userRepository;
     FriendRequestMapper friendRequestMapper;
     FriendRepository friendRepository;
-    ConversationRepository conversationRepository;
-    ParticipantRepository participantRepository;
+    ConversationService conversationService;
+    UserService userService;
 
     @Override
+    @Transactional
     public FriendRequestResponse sendFriendRequest(FriendRequestRequest friendRequestRequest) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User sender = userRepository.findByUsername(username)
@@ -80,65 +81,31 @@ public class FriendRequestServiceImpl implements FriendRequestService {
     @Override
     @Transactional
     public FriendRequestResponse acceptFriendRequest(Long requestId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User currentUser = userService.currentUser();
         
         FriendRequest friendRequest = friendRequestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.FRIEND_REQUEST_NOT_FOUND));
-        
-        // Verify that the current user is the receiver of the request
-        if (!Objects.equals(friendRequest.getReceiver().getId(), currentUser.getId())) {
-            throw new AppException(ErrorCode.UNAUTHORIZED);
-        }
-        
-        // Check if the request is still pending
-        if (friendRequest.getStatus() != FriendRequestStatus.PENDING) {
-            throw new AppException(ErrorCode.FRIEND_REQUEST_ALREADY_PROCESSED);
-        }
+
+        validateFriendRequest(friendRequest, currentUser);
         
         friendRequest.setStatus(FriendRequestStatus.ACCEPTED);
         FriendRequest saved = friendRequestRepository.save(friendRequest);
-        
-        // Create friendship record
-        Friend friendship = Friend.builder()
-                .userId1(currentUser.getId())
-                .userId2(friendRequest.getSender().getId())
-                .build();
-        
-        friendRepository.save(friendship);
-        
-        // Create a private conversation between these two users
-        Conversation conversation = Conversation.builder()
-                .title("") // No title for private conversations
-                .type(Conversation.Type.PRIVATE)
-                .build();
-        
-        conversation = conversationRepository.save(conversation);
-        
-        Participant participant1 = Participant.builder()
-                .conversationId(conversation.getId())
-                .userId(currentUser.getId())
-                .type(Participant.Type.MEMBER)
-                .build();
-        
-        Participant participant2 = Participant.builder()
-                .conversationId(conversation.getId())
-                .userId(friendRequest.getSender().getId())
-                .type(Participant.Type.MEMBER)
-                .build();
-        
-        participantRepository.save(participant1);
-        participantRepository.save(participant2);
+
+        createFriendship(currentUser.getId(), friendRequest.getSender().getId());
+
+        conversationService.create(
+                Conversation.Type.PRIVATE,
+                "",
+                Arrays.asList(currentUser.getId(), friendRequest.getSender().getId())
+        );
         
         return friendRequestMapper.toFriendRequestResponse(saved);
     }
 
     @Override
+    @Transactional
     public void rejectFriendRequest(Long requestId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
+        User currentUser = userService.currentUser();
         
         FriendRequest friendRequest = friendRequestRepository.findById(requestId)
                 .orElseThrow(() -> new AppException(ErrorCode.FRIEND_REQUEST_NOT_FOUND));
@@ -177,5 +144,26 @@ public class FriendRequestServiceImpl implements FriendRequestService {
         return sentRequests.stream()
                 .map(friendRequestMapper::toFriendRequestResponse)
                 .collect(Collectors.toList());
+    }
+
+    private void validateFriendRequest(FriendRequest friendRequest, User currentUser) {
+        // Verify that the current user is the receiver of the request
+        if (!Objects.equals(friendRequest.getReceiver().getId(), currentUser.getId())) {
+            throw new AppException(ErrorCode.UNAUTHORIZED);
+        }
+
+        // Check if the request is still pending
+        if (friendRequest.getStatus() != FriendRequestStatus.PENDING) {
+            throw new AppException(ErrorCode.FRIEND_REQUEST_ALREADY_PROCESSED);
+        }
+    }
+
+    private void createFriendship(Long userId1, Long userId2) {
+        friendRepository.save(
+                Friend.builder()
+                        .userId1(userId1)
+                        .userId2(userId2)
+                        .build()
+        );
     }
 }

@@ -41,54 +41,39 @@ public class WebSocketServiceImpl implements WebSocketService {
     }
 
     @Override
-    public void sendWebSocketMessages(Message message, Conversation conversation, Long currentUserId, String currentUsername) {
-        if (conversation.getType() == Conversation.Type.PRIVATE || conversation.getType() == Conversation.Type.GROUP) {
-            sendMessage(message, conversation.getId(), currentUserId, currentUsername);
-        } else {
-            throw new AppException(ErrorCode.INVALID_CONVERSATION_TYPE);
-        }
-    }
+    public void sendMessage(Message message, Conversation conversation, User currentUser) {
 
-    @Override
-    public List<String> findOtherUsernamesInConversation(Long conversationId, Long currentUserId) {
-        List<Long> otherUserIds = participantRepository.findUserIdsByConversationId(conversationId).stream()
-                .filter(id -> !id.equals(currentUserId))
-                .collect(Collectors.toList());
-        
-        if (otherUserIds.isEmpty()) {
-            throw new AppException(ErrorCode.RECEIVER_NOT_FOUND);
-        }
-        
-        List<User> receivers = userRepository.findAllById(otherUserIds);
-        
-        if (receivers.isEmpty()) {
-            throw new AppException(ErrorCode.RECEIVER_NOT_FOUND);
-        }
-        
-        return receivers.stream()
-                .map(User::getUsername)
-                .collect(Collectors.toList());
-    }
+        List<User> receivers = findOtherUsersInConversation(conversation.getId(), currentUser.getId());
 
-    private void sendMessage(Message message, Long conversationId,Long currentUserId, String currentUsername) {
-        List<String> receiverUsernames = findOtherUsernamesInConversation(conversationId, currentUserId);
-        
         // Use the mapper to create message responses
-        MessageResponse senderMessage = messageMapper.toMessageResponse(message, conversationId, true);
-        MessageResponse receiverMessage = messageMapper.toMessageResponse(message, conversationId, false);
-        
+        MessageResponse senderMessage = messageMapper.toMessageResponse(
+                message,
+                conversation.getId(),
+                currentUser.getFirstName() + " " + currentUser.getLastName(),
+                currentUser.getAvtUrl(),
+                true
+        );
+
+        MessageResponse receiverMessage = messageMapper.toMessageResponse(
+                message,
+                conversation.getId(),
+                currentUser.getFirstName() + " " + currentUser.getLastName(),
+                currentUser.getAvtUrl(),
+                false
+        );
+
         try {
             // Send to the sender for confirmation
             messagingTemplate.convertAndSendToUser(
-                    currentUsername,
+                    currentUser.getUsername(),
                     "/queue/messages",
                     senderMessage
             );
 
             // Send to all receivers
-            for (String receiverUsername : receiverUsernames) {
+            for (User user : receivers) {
                 messagingTemplate.convertAndSendToUser(
-                        receiverUsername,
+                        user.getUsername(),
                         "/queue/messages",
                         receiverMessage
                 );
@@ -97,5 +82,24 @@ public class WebSocketServiceImpl implements WebSocketService {
             log.error("Failed to send WebSocket message", messagingException);
             throw new AppException(ErrorCode.MESSAGE_SENDING_ERROR);
         }
+    }
+
+    @Override
+    public List<User> findOtherUsersInConversation(Long conversationId, Long currentUserId) {
+        List<Long> otherUserIds = participantRepository.findUserIdsByConversationId(conversationId).stream()
+                .filter(id -> !id.equals(currentUserId))
+                .collect(Collectors.toList());
+
+        if (otherUserIds.isEmpty()) {
+            throw new AppException(ErrorCode.RECEIVER_NOT_FOUND);
+        }
+
+        List<User> receivers = userRepository.findAllById(otherUserIds);
+
+        if (receivers.isEmpty()) {
+            throw new AppException(ErrorCode.RECEIVER_NOT_FOUND);
+        }
+
+        return receivers;
     }
 }

@@ -99,6 +99,18 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public User getUserWithNameAndAvt(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
+                );
+        return User.builder()
+                .firstName(user.getFirstName())
+                .lastName(user.getLastName())
+                .avtUrl(user.getAvtUrl())
+                .build();
+    }
+
+    @Override
     @Transactional
     public void delete(Long id) {
         User user = userRepository.findById(id)
@@ -176,5 +188,11 @@ public class UserServiceImpl implements UserService {
         user.setAvtUrl(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_URL);
         user.setCloudinaryAvtId(CloudinaryConfig.CLOUDINARY_DEFAULT_AVATAR_PUBLICID);
         userRepository.save(user);
+    }
+
+    @Override
+    public User findByUsername(String userName) {
+        return userRepository.findByUsername(userName)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
     }
 }

@@ -14,12 +14,12 @@ import jakarta.validation.constraints.NotNull;
 @AllArgsConstructor
 @NoArgsConstructor
 public class MessageRequest {
-    @NotNull(message = "ConversationService ID is required")
+    @NotNull(message = "EMPTY_CONVERSATION_ID")
     private Long conversationId;
     
-    @NotBlank(message = "Message content cannot be empty")
-    private String content; // Changed from message to content
+    @NotBlank(message = "MISSING_CONTENT_FIELD")
+    private String content;
     
-    @NotNull(message = "Message type is required")
+    @NotNull(message = "EMPTY_MESSAGE_TYPE")
     private Message.Type type;
 }

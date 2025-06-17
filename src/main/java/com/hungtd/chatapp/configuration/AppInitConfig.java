@@ -29,7 +29,6 @@ public class AppInitConfig {
     MessageRepository messageRepository;
     FriendRepository friendRepository;
     FriendRequestRepository friendRequestRepository;
-    AttachmentRepository attachmentRepository;
 
     @Bean
     ApplicationRunner applicationRunner(UserRepository userRepository) {
@@ -275,19 +274,6 @@ public class AppInitConfig {
         }
 
         messageRepository.saveAll(messages);
-
-        // Create some attachments for random messages
-        if (messages.size() > 3 && random.nextBoolean()) {
-            Message messageWithAttachment = messages.get(random.nextInt(messages.size()));
-
-            Attachment attachment = Attachment.builder()
-                    .message(messageWithAttachment)
-                    .fileUrl("https://example.com/file" + System.currentTimeMillis() + ".jpg")
-                    .thumbUrl("https://cloudinary.com/thumb" + System.currentTimeMillis() + ".jpg")
-                    .build();
-
-            attachmentRepository.save(attachment);
-        }
     }
 
     private String generateRandomMessage(String senderName, Conversation conversation) {

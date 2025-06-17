@@ -17,6 +17,8 @@ public class MessageResponse {
     Long id;
     Long conversationId;
     Long senderId;
+    String senderName;
+    String senderAvtUrl;
     Message.Type type;
     String content;
     LocalDateTime createdAt;

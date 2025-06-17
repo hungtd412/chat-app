@@ -116,7 +116,7 @@ function connectToWebSocket() {
 
         if (username) {
             // Subscribe to personal queue for private messages using username
-            stompClient.subscribe(`/user/${username}/queue/messages`, onMessageReceived);
+            stompClient.subscribe(`/user11/${username}/queue/messages`, onMessageReceived);
             console.log(`Subscribed to /user/${username}/queue/messages`);
 
         }

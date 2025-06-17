@@ -2,6 +2,7 @@ package com.hungtd.chatapp.service.websocket;
 
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Message;
+import com.hungtd.chatapp.entity.User;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
 
 import java.util.List;
@@ -21,10 +22,8 @@ public interface WebSocketService {
      * 
      * @param message the message entity
      * @param conversation the conversation entity
-     * @param currentUserId the ID of the current user (sender)
-     * @param currentUsername the username of the current user (sender)
      */
-    void sendWebSocketMessages(Message message, Conversation conversation, Long currentUserId, String currentUsername);
+    void sendMessage(Message message, Conversation conversation, User currentUser);
     
     /**
      * Finds usernames of other participants in a conversation
@@ -33,5 +32,5 @@ public interface WebSocketService {
      * @param currentUserId the ID of the current user
      * @return list of usernames of other users in the conversation
      */
-    List<String> findOtherUsernamesInConversation(Long conversationId, Long currentUserId);
+    List<User> findOtherUsersInConversation(Long conversationId, Long currentUserId);
 }

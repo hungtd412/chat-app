@@ -20,6 +20,7 @@ public interface UserService {
 
     User get(Long id);
 
+    User getUserWithNameAndAvt(Long id);
 
     void delete(Long id);
 
@@ -34,4 +35,6 @@ public interface UserService {
     User updateEmail(UpdateEmailRequest request);
 
     void restoreDefaultAvatar();
+
+    User findByUsername(String userName);
 }

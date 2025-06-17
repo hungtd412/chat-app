@@ -15,7 +15,9 @@ public interface MessageService {
      * @return list of messages ordered by ID (newest first)
      */
     List<Message> getMessagesByConversationId(Long conversationId);
-    
+
+
+    List<MessageResponse> toMessageResponseList(List<Message> messageList);
     /**
      * Processes and sends a chat message
      * 

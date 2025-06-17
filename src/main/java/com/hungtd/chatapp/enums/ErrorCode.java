@@ -67,7 +67,10 @@ public enum ErrorCode {
     USER_NOT_IN_CONVERSATION(1081, "Bạn không phải là thành viên của cuộc hội thoại này!", 403),
     RECEIVER_NOT_FOUND(1082, "Không tìm thấy người nhận!", 400),
     INVALID_CONVERSATION_TYPE(1083, "Loại cuộc hội thoại không hợp lệ!", 400),
-    MESSAGE_SENDING_ERROR(1084, "Có lỗi xảy ra khi gửi tin nhắn", 500),
+    MESSAGE_SENDING_ERROR(1084, "Có lỗi xảy ra khi gửi tin nhắn!", 500),
+    EMPTY_CONVERSATION_ID(1085, "ID của cuộc hội thoại không được để trống!", 400),
+    MISSING_CONTENT_FIELD(1086, "Trường content bị thiếu!", 400),
+    EMPTY_MESSAGE_TYPE(1087, "Loại tin nhắn không được để trống!", 400),
 
     //UPLOAD FILE 109X
     UPLOAD_FILE_FAIL(1090, "Có lỗi xảy ra khi tải lên file!", 500),

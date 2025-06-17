@@ -17,9 +17,6 @@ $(document).ready(function() {
         // Global WebSocket client
         window.stompClient = window.stompClient || null;
         
-        // Try to reconnect to the WebSocket if needed
-        ensureWebSocketConnection();
-
         // Load conversation details and messages
         loadConversationDetails(conversationId);
         loadMessages(conversationId);
@@ -59,35 +56,10 @@ function initializeChat(conversationId, conversationType) {
     
     console.log('Input field exists:', inputField.length > 0);
     console.log('Send button exists:', sendButton.length > 0);
-    
-    // Subscribe to the specific conversation topic for group chats
-    if (conversationType === 'GROUP' && window.stompClient && window.stompClient.connected) {
-        subscribeToGroupChat(conversationId);
-    }
 }
 
 // Track subscriptions to avoid duplicates
 window.activeSubscriptions = window.activeSubscriptions || {};
-
-function subscribeToGroupChat(conversationId) {
-    if (!window.stompClient || !window.stompClient.connected) return;
-    
-    // Check if we're already subscribed to this topic
-    const topicId = `/topic/conversation.${conversationId}`;
-    if (window.activeSubscriptions[topicId]) {
-        console.log(`Already subscribed to topic: ${topicId}`);
-        return;
-    }
-    
-    // Subscribe and store the subscription
-    const subscription = window.stompClient.subscribe(topicId, function(payload) {
-        handleIncomingMessage(payload, conversationId);
-    });
-    
-    // Store subscription reference for future checks
-    window.activeSubscriptions[topicId] = subscription;
-    console.log(`Subscribed to topic for conversation ${conversationId}`);
-}
 
 function handleIncomingMessage(payload, currentConversationId) {
     console.log('Message received via WebSocket:', payload);
@@ -112,82 +84,6 @@ function handleIncomingMessage(payload, currentConversationId) {
         }
     } catch (error) {
         console.error('Error processing received message:', error);
-    }
-}
-
-function ensureWebSocketConnection() {
-    // Check if we have a global stompClient or need to create a new one
-    if (window.stompClient && window.stompClient.connected) {
-        console.log('Using existing WebSocket connection');
-        subscribeToTopics();
-    } else {
-        console.log('Creating new WebSocket connection');
-        connectToWebSocket();
-    }
-}
-
-function connectToWebSocket() {
-    // Get JWT token for authentication
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-        console.error('No token found, cannot establish WebSocket connection');
-        return;
-    }
-    
-    // Create the SockJS connection to the WebSocket
-    const socket = new SockJS('http://localhost:9000/ws');
-    window.stompClient = Stomp.over(socket);
-    
-    // Disable debug messages
-    window.stompClient.debug = null;
-    
-    // Add JWT authentication header
-    const headers = {
-        'Authorization': 'Bearer ' + token
-    };
-    
-    // Connect to the WebSocket and subscribe to personal queue
-    window.stompClient.connect(headers, function(frame) {
-        console.log('Connected to WebSocket');
-        subscribeToTopics();
-    }, function(error) {
-        console.error('WebSocket connection error: ', error);
-        // Reconnect after delay
-        setTimeout(connectToWebSocket, 5000);
-    });
-}
-
-function subscribeToTopics() {
-    if (!window.stompClient) return;
-    
-    try {
-        // Get username from token
-        const username = getUsernameFromToken(localStorage.getItem('access_token'));
-        const conversationId = getConversationIdFromUI();
-
-        if (username) {
-            // Check if we're already subscribed to the user queue
-            const queueId = `/user/${username}/queue/messages`;
-            if (!window.activeSubscriptions[queueId]) {
-                // Subscribe to the user's private queue using username
-                const subscription = window.stompClient.subscribe(queueId, function(payload) {
-                    handleIncomingMessage(payload, conversationId);
-                });
-                
-                // Store subscription reference
-                window.activeSubscriptions[queueId] = subscription;
-                console.log(`Subscribed to personal queue for user ${username}`);
-            } else {
-                console.log(`Already subscribed to personal queue: ${queueId}`);
-            }
-        }
-    
-        // Subscribe to the conversation topic (for group chats)
-        if (conversationId) {
-            subscribeToGroupChat(conversationId);
-        }
-    } catch (e) {
-        console.error('Error subscribing to WebSocket topics:', e);
     }
 }
 
@@ -273,21 +169,6 @@ function loadChatInContainer(container, conversationId, conversationType, displa
 
         // Initialize the chat component
         initializeChat(conversationId, conversationType);
-        
-        // Check if we need to subscribe to group chat topic
-        if (conversationType === 'GROUP') {
-            const topicId = `/topic/conversation.${conversationId}`;
-            
-            // Check if we're already subscribed
-            if (!window.activeSubscriptions[topicId] && stompClientInstance && stompClientInstance.connected) {
-                // Subscribe and store the subscription
-                const subscription = stompClientInstance.subscribe(topicId, function(payload) {
-                    handleIncomingMessage(payload, conversationId);
-                });
-                window.activeSubscriptions[topicId] = subscription;
-                console.log(`Subscribed to topic for conversation ${conversationId} from loadChatInContainer`);
-            }
-        }
     })
     .fail(function(xhr, status, error) {
         console.error('Error loading chat template:', error);

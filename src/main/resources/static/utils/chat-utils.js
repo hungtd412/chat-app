@@ -120,12 +120,24 @@ function appendNewMessage(message, messagesListId = 'messages-list') {
 
     const messageClass = isMine ? 'outgoing' : 'incoming';
     const content = message.content;
+    
+    // Avatar display
+    const avatarHtml = !isMine ? 
+        `<div class="message-avatar">
+            ${message.senderAvtUrl ? 
+                `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` : 
+                `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
+            }
+         </div>` : '';
 
     const messageEl = $(`
         <div class="message ${messageClass}">
-            ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
-            <div class="message-content">${escapeHtml(content)}</div>
-            <div class="message-time">${timeString}</div>
+            ${avatarHtml}
+            <div class="message-bubble">
+                ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="message-time">${timeString}</div>
+            </div>
         </div>
     `);
 
@@ -152,10 +164,18 @@ function displayMessages(messages, messagesListId = 'messages-list') {
     const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
 
     let currentDate = '';
-    sortedMessages.forEach(message => {
+    let currentSenderId = null;
+    
+    sortedMessages.forEach((message, index) => {
         const date = new Date(message.createdAt);
         const messageDate = formatDate(date);
-
+        const isMine = message.belongCurrentUser;
+        const messageClass = isMine ? 'outgoing' : 'incoming';
+        const timeString = formatTime(date);
+        
+        // Check if we should show the avatar (only for first message in a sequence from same sender)
+        const showAvatar = !isMine && (message.senderId !== currentSenderId);
+        
         // Add date divider if this is a new date
         if (messageDate !== currentDate) {
             currentDate = messageDate;
@@ -165,19 +185,33 @@ function displayMessages(messages, messagesListId = 'messages-list') {
                 </div>
             `);
         }
-
-        const messageClass = message.belongCurrentUser ? 'outgoing' : 'incoming';
-        const timeString = formatTime(date);
-
+        
+        // Avatar display
+        const avatarHtml = !isMine && showAvatar ? 
+            `<div class="message-avatar">
+                ${message.senderAvtUrl ? 
+                    `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` : 
+                    `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
+                }
+             </div>` : 
+            (!isMine ? '<div class="message-avatar-spacer"></div>' : '');
+        
+        // Show sender name only for the first message in a group from the same sender
+        const showSenderName = !isMine && (message.senderId !== currentSenderId);
+        
         const messageEl = $(`
-            <div class="message ${messageClass}">
-                ${!message.belongCurrentUser ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
-                <div class="message-content">${escapeHtml(message.content)}</div>
-                <div class="message-time">${timeString}</div>
+            <div class="message ${messageClass}${showAvatar ? '' : ' subsequent-message'}">
+                ${avatarHtml}
+                <div class="message-bubble">
+                    ${showSenderName ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+                    <div class="message-content">${escapeHtml(message.content)}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
             </div>
         `);
 
         messagesListEl.append(messageEl);
+        currentSenderId = message.senderId;
     });
 
     // Scroll to bottom of messages

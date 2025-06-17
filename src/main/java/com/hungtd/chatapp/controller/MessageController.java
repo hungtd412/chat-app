@@ -29,8 +29,6 @@ import java.util.List;
 public class MessageController {
 
     MessageService messageService;
-    MessageMapper messageMapper;
-    UserService userService;
 
     @GetMapping("/conversation/{conversationId}")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessagesByConversationId(
@@ -39,12 +37,9 @@ public class MessageController {
         
         // Get messages from service
         List<Message> messages = messageService.getMessagesByConversationId(conversationId);
-        
-        // Get current user ID for mapping message ownership
-        User currentUser = userService.currentUser();
-        
-        // Use mapper to convert to response DTOs with ownership information
-        List<MessageResponse> messageResponses = messageMapper.toMessageResponseList(messages, currentUser.getId());
+
+        // Add sender name and avatar for display
+        List<MessageResponse> messageResponses = messageService.toMessageResponseList(messages);
         
         return ResponseEntity.ok(
                 ApiResponse.<List<MessageResponse>>builder()

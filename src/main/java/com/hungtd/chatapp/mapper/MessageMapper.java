@@ -21,9 +21,11 @@ public interface MessageMapper {
      * @return the mapped MessageResponse DTO
      */
     @Mapping(target = "conversationId", source = "conversationId")
+    @Mapping(target = "senderName", source = "senderName")
+    @Mapping(target = "senderAvtUrl", source = "senderAvtUrl")
     @Mapping(target = "isBelongCurrentUser", source = "isBelongCurrentUser")
-    @Mapping(target = "content", source = "message.message") // Map message.message to content
-    MessageResponse toMessageResponse(Message message, Long conversationId, Boolean isBelongCurrentUser);
+    @Mapping(target = "content", source = "message.message")
+    MessageResponse toMessageResponse(Message message, Long conversationId, String senderName, String senderAvtUrl, Boolean isBelongCurrentUser);
     
     /**
      * Maps a MessageRequest to a Message entity
@@ -47,11 +49,13 @@ public interface MessageMapper {
      * @param currentUserId the ID of the current user to determine message ownership
      * @return the list of mapped MessageResponse DTOs
      */
-    default List<MessageResponse> toMessageResponseList(List<Message> messages, Long currentUserId) {
+    default List<MessageResponse> toMessageResponseList(List<Message> messages, Long currentUserId, String senderName, String senderAvtUrl) {
         return messages.stream()
                 .map(message -> toMessageResponse(
                         message,
                         message.getConversation().getId(),
+                        senderName,
+                        senderAvtUrl,
                         message.getSenderId().equals(currentUserId)
                 ))
                 .toList();

@@ -32,27 +32,25 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        // Enable a simple message broker to carry messages back to the client on destinations
-        // prefixed with "/topic" and "/queue"
-        // "/topic" is typically used for messages that are broadcasted to multiple clients
-        // "/queue" is typically used for messages targeted at specific users
-        registry.enableSimpleBroker("/topic", "/queue", "/user");
-        
         // Set prefix for messages bound for methods annotated with @MessageMapping
         registry.setApplicationDestinationPrefixes("/app");
-        
-        // Set prefix for user-specific messages
-        registry.setUserDestinationPrefix("/user");
-    }
 
-    @Override
-    public boolean configureMessageConverters(List<MessageConverter> messageConverters) {
-        DefaultContentTypeResolver resolver = new DefaultContentTypeResolver();
-        resolver.setDefaultMimeType(MimeTypeUtils.APPLICATION_JSON);
-        MappingJackson2MessageConverter converter = new MappingJackson2MessageConverter();
-        converter.setObjectMapper(new ObjectMapper());
-        converter.setContentTypeResolver(resolver);
-        messageConverters.add(converter);
-        return false;
+        // Set prefix for user-specific messages
+        registry.setUserDestinationPrefix("/user11");
+
+        //web socket like a bridge, it can provide us with a lot of bridges(ex: user11, user849, topic, queue,...)
+        //user subscribe to receive message by using the bridge called user11
+
+        //however we need someone to control the flow of messages,
+        //this is where the message broker comes in
+
+        // this bridge need a controller who can control and decide whom to send message to
+        //this controller is simpleBroker.
+
+        // As a result, we said to spring websocket that let's bring a simple broker to the bridge named user11.
+
+        // this simple broker are
+        //responsible for handling message of user11 bridge(respectively the line below)
+        registry.enableSimpleBroker("/user11");
     }
 }

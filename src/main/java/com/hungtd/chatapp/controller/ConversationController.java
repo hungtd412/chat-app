@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -47,7 +48,7 @@ public class ConversationController {
     @PatchMapping("/{id}/title")
     public ResponseEntity<ApiResponse<ConversationResponse>> updateGroupTitle(
             @PathVariable("id") Long id,
-            @Valid UpdateGroupTitleRequest updateGroupTitleRequest
+            @RequestBody @Valid UpdateGroupTitleRequest updateGroupTitleRequest
     ) {
         Conversation conversation = conversationService.updateGroupTitle(id, updateGroupTitleRequest);
 
@@ -61,9 +62,9 @@ public class ConversationController {
     @PatchMapping("/{id}/image")
     public ResponseEntity<ApiResponse<ConversationResponse>> updateGroupImage(
             @PathVariable("id") Long id,
-            @Valid UploadImageRequest uploadImageRequest
+            @RequestPart("image") MultipartFile image
     ) {
-        Conversation conversation = conversationService.updateGroupImg(id, uploadImageRequest);
+        Conversation conversation = conversationService.updateGroupImg(id, image);
 
         return ResponseEntity.ok(
                 ApiResponse.<ConversationResponse>builder()

@@ -56,10 +56,212 @@ function initializeChat(conversationId, conversationType) {
     
     console.log('Input field exists:', inputField.length > 0);
     console.log('Send button exists:', sendButton.length > 0);
+    
+    // Show/hide group edit buttons based on conversation type
+    if (conversationType === 'GROUP') {
+        $('#group-edit-buttons').show();
+        setupGroupEditButtons(conversationId);
+    } else {
+        $('#group-edit-buttons').hide();
+    }
 }
 
-// Track subscriptions to avoid duplicates
-window.activeSubscriptions = window.activeSubscriptions || {};
+// Set up event handlers for group edit buttons
+function setupGroupEditButtons(conversationId) {
+    // Edit group title button
+    $('#edit-group-title-btn').off('click').on('click', function() {
+        // Get current title
+        const currentTitle = $('#chat-title').text();
+        $('#group-title-input').val(currentTitle);
+        $('#edit-group-title-modal').show();
+    });
+    
+    // Edit group image button
+    $('#edit-group-image-btn').off('click').on('click', function() {
+        $('#image-preview').empty();
+        $('#edit-group-image-modal').show();
+    });
+    
+    // Close modals when clicking the X
+    $('.close-modal').off('click').on('click', function() {
+        $(this).closest('.modal').hide();
+    });
+    
+    // Close modals when clicking outside
+    $('.modal').off('click').on('click', function(event) {
+        if (event.target === this) {
+            $(this).hide();
+        }
+    });
+    
+    // Preview selected image
+    $('#group-image-input').off('change').on('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                $('#image-preview').html(`<img src="${e.target.result}" alt="Preview">`);
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+    
+    // Save group title
+    $('#save-group-title-btn').off('click').on('click', function() {
+        const newTitle = $('#group-title-input').val().trim();
+        if (newTitle) {
+            updateGroupTitle(conversationId, newTitle);
+        }
+    });
+    
+    // Save group image
+    $('#save-group-image-btn').off('click').on('click', function() {
+        const fileInput = document.getElementById('group-image-input');
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            updateGroupImage(conversationId, file);
+        } else {
+            alert('Please select an image first');
+        }
+    });
+}
+
+// Update group title via API
+function updateGroupTitle(conversationId, newTitle) {
+    // Show loading on the button
+    showButtonLoading('#save-group-title-btn', 'Saving...');
+    
+    // Also show status message
+    $('#title-loading-status').text('Updating group title...').show();
+    
+    $.ajax({
+        url: `http://localhost:9000/conversations/${conversationId}/title`,
+        type: 'PATCH',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token'),
+            'Content-Type': 'application/json'
+        },
+        data: JSON.stringify({
+            title: newTitle
+        }),
+        success: function(response) {
+            console.log('Group title updated successfully:', response);
+            
+            // Hide loading
+            hideButtonLoading('#save-group-title-btn');
+            
+            // Update UI
+            $('#chat-title').text(newTitle);
+            $('#edit-group-title-modal').hide();
+            
+            // Show success message in the status area instead of a popup
+            $('#title-loading-status').removeClass('error').addClass('success').text('Group title updated successfully!');
+            
+            // Hide the status message after 3 seconds
+            setTimeout(function() {
+                $('#title-loading-status').fadeOut();
+            }, 3000);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error updating group title:', error);
+            
+            // Hide loading
+            hideButtonLoading('#save-group-title-btn');
+            
+            // Show error in status area
+            $('#title-loading-status').removeClass('success').addClass('error').text(xhr.responseJSON?.message || 'Failed to update group title');
+            
+            // Don't automatically hide error messages
+        }
+    });
+}
+
+// Update group image via API
+function updateGroupImage(conversationId, imageFile) {
+    // Create FormData object for file upload
+    const formData = new FormData();
+    formData.append('image', imageFile);
+    
+    // Show loading on the button
+    showButtonLoading('#save-group-image-btn', 'Uploading...');
+    
+    // Also show status message
+    $('#image-loading-status').text('Uploading image...').show();
+    
+    $.ajax({
+        url: `http://localhost:9000/conversations/${conversationId}/image`,
+        type: 'PATCH',
+        data: formData,
+        processData: false, // Don't process the data
+        contentType: false, // Don't set content type (browser will set it with boundary)
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        },
+        success: function(response) {
+            console.log('Group image updated successfully:', response);
+            
+            // Hide loading
+            hideButtonLoading('#save-group-image-btn');
+            
+            // Show success message in the status area instead of a popup
+            $('#image-loading-status').removeClass('error').addClass('success').text('Group image updated successfully!');
+            
+            // Refresh the conversation list to show the updated image
+            if (typeof window.loadConversations === 'function') {
+                window.loadConversations();
+            }
+            
+            // Hide the status message after 3 seconds, then close the modal
+            setTimeout(function() {
+                $('#image-loading-status').fadeOut();
+                // After fading out the message, close the modal
+                setTimeout(function() {
+                    $('#edit-group-image-modal').hide();
+                }, 300);
+            }, 3000);
+        },
+        error: function(xhr, status, error) {
+            console.error('Error updating group image:', error);
+            
+            // Hide loading
+            hideButtonLoading('#save-group-image-btn');
+            
+            // Show error in status area
+            $('#image-loading-status').removeClass('success').addClass('error').text(xhr.responseJSON?.message || 'Failed to upload image');
+            
+            // Don't automatically hide error messages
+        }
+    });
+}
+
+// Show notification toast message - modified to only handle errors
+function showNotification(message, type = 'success') {
+    // For success messages, just return (don't show any popup)
+    if (type === 'success') {
+        return;
+    }
+    
+    // For errors, use existing error popup if available
+    if (typeof window.showErrorPopup === 'function' && type === 'error') {
+        window.showErrorPopup(message);
+        return;
+    }
+    
+    // Fallback error notification
+    const toast = $(`<div class="notification-toast ${type}">${message}</div>`);
+    $('body').append(toast);
+    
+    setTimeout(function() {
+        toast.addClass('show');
+        
+        setTimeout(function() {
+            toast.removeClass('show');
+            setTimeout(function() {
+                toast.remove();
+            }, 300);
+        }, 3000);
+    }, 100);
+}
 
 function handleIncomingMessage(payload, currentConversationId) {
     console.log('Message received via WebSocket:', payload);
@@ -142,7 +344,12 @@ function loadChatInContainer(container, conversationId, conversationType, displa
     $.get('../chat/chat.html', function(template) {
         // Replace the chat container with the loaded template
         container.html(template);
-
+        
+        // Load the loading utility script
+        $.getScript('../utils/loading-util.js', function() {
+            console.log('Loading utility loaded successfully');
+        });
+        
         // Set data attributes for the chat frame
         $('#chat-frame').attr('data-conversation-id', conversationId);
         $('#chat-frame').attr('data-conversation-type', conversationType);

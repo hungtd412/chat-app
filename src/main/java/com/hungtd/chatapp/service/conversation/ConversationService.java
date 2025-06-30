@@ -4,6 +4,7 @@ import com.hungtd.chatapp.dto.request.UpdateGroupTitleRequest;
 import com.hungtd.chatapp.dto.request.UploadImageRequest;
 import com.hungtd.chatapp.dto.response.ConversationResponse;
 import com.hungtd.chatapp.entity.Conversation;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,7 +22,7 @@ public interface ConversationService {
 
     Conversation updateGroupTitle(Long conversationId, UpdateGroupTitleRequest updateGroupTitleRequest);
 
-    Conversation updateGroupImg(Long conversationId, UploadImageRequest uploadImageRequest);
+    Conversation updateGroupImg(Long conversationId, MultipartFile image);
 
     public void validateUserInConversation(Long conversationId, Long userId);
 }

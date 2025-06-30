@@ -46,10 +46,10 @@ public class User extends BaseEntity {
 
     @Column(columnDefinition = "TEXT")
     String preferences;
-    
+
     @Column(name = "avt_url", columnDefinition = "TEXT")
     String avtUrl;
-    
+
     @Column(name = "cloudinary_avt_id", columnDefinition = "TEXT")
     String cloudinaryAvtId;
 

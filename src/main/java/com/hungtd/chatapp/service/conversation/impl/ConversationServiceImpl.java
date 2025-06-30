@@ -1,5 +1,9 @@
 package com.hungtd.chatapp.service.conversation.impl;
 
+import com.hungtd.chatapp.configuration.CloudinaryConfig;
+import com.hungtd.chatapp.dto.request.UpdateGroupTitleRequest;
+import com.hungtd.chatapp.dto.request.UploadImageRequest;
+import com.hungtd.chatapp.dto.response.CloudinaryResponse;
 import com.hungtd.chatapp.dto.response.ConversationResponse;
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Participant;
@@ -11,20 +15,26 @@ import com.hungtd.chatapp.mapper.ConversationMapper;
 import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.ParticipantRepository;
 import com.hungtd.chatapp.repository.UserRepository;
+import com.hungtd.chatapp.service.cloudinary.CloudinaryService;
 import com.hungtd.chatapp.service.conversation.ConversationService;
 import com.hungtd.chatapp.service.user.UserService;
+import com.hungtd.chatapp.util.FileUploadUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Slf4j
 public class ConversationServiceImpl implements ConversationService {
 
     ConversationRepository conversationRepository;
@@ -32,6 +42,7 @@ public class ConversationServiceImpl implements ConversationService {
     ParticipantRepository participantRepository;
     UserRepository userRepository;
     ConversationMapper conversationMapper;
+    CloudinaryService cloudinaryService;
 
 
     @Override
@@ -60,12 +71,6 @@ public class ConversationServiceImpl implements ConversationService {
     @Override
     public boolean isExistById(Long conversationId) {
         return conversationRepository.existsById(conversationId);
-    }
-
-    @Override
-    public boolean isUserInConversation(Long conversationId, Long userId) {
-        ParticipantId participantId = new ParticipantId(conversationId, userId);
-        return participantRepository.existsById(participantId);
     }
 
     @Override
@@ -107,4 +112,64 @@ public class ConversationServiceImpl implements ConversationService {
         
         return response;
     }
+
+    @Override
+    public Conversation updateGroupTitle(Long conversationId, UpdateGroupTitleRequest updateGroupTitleRequest) {
+        //validate current user is in the conversation
+        validateUserInConversation(conversationId, userService.currentUser().getId());
+
+        Conversation conversation = getConversationById(conversationId);
+
+        if (!isGroupConversation(conversation)) {
+            throw new AppException(ErrorCode.GROUP_CONVERSATION_TYPE_REQUIRED);
+        }
+
+        conversation.setTitle(updateGroupTitleRequest.getTitle());
+        return conversationRepository.save(conversation);
+    }
+
+    @Override
+    public Conversation updateGroupImg(Long conversationId, UploadImageRequest uploadImageRequest) {
+        //validate current user is in the conversation
+        validateUserInConversation(conversationId, userService.currentUser().getId());
+
+        Conversation conversation = getConversationById(conversationId);
+
+        if (!isGroupConversation(conversation)) {
+            throw new AppException(ErrorCode.GROUP_CONVERSATION_TYPE_REQUIRED);
+        }
+
+        FileUploadUtil.assertAllowed(uploadImageRequest.getImage(), FileUploadUtil.IMAGE_PATTERN);
+
+
+        if (StringUtils.isNotBlank(conversation.getCloudinaryImageId())
+                && !(Objects.equals(conversation.getCloudinaryImageId(),
+                CloudinaryConfig.CLOUDINARY_DEFAULT_GROUP_PUBLICID))
+        ) {
+            cloudinaryService.delete(conversation.getCloudinaryImageId());
+        }
+
+        final CloudinaryResponse cloudinaryResponse = cloudinaryService.uploadFile(uploadImageRequest.getImage(), "group");
+
+        conversation.setImageUrl(cloudinaryResponse.getUrl());
+        conversation.setCloudinaryImageId(cloudinaryResponse.getPublicId());
+        return conversationRepository.save(conversation);
+    }
+
+    @Override
+    public void validateUserInConversation(Long conversationId, Long userId) {
+        if (!isUserInConversation(conversationId, userId)) {
+            throw new AppException(ErrorCode.USER_NOT_IN_CONVERSATION);
+        }
+    }
+
+    private boolean isUserInConversation(Long conversationId, Long userId) {
+        ParticipantId participantId = new ParticipantId(conversationId, userId);
+        return participantRepository.existsById(participantId);
+    }
+
+    private boolean isGroupConversation(Conversation conversation) {
+        return conversation.getType().equals(Conversation.Type.GROUP);
+    }
+
 }

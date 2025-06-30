@@ -18,7 +18,7 @@ public class FileUploadUtil {
 
     public final long MAX_FILE_SIZE = 20 * 1024 * 2014; //20MB
 
-    public final String IMAGE_PATTERN = "(.+(\\.(?i)(jpg|png|gif|bmp))$)";
+    public final String IMAGE_PATTERN = "(.+(\\.(?i)(jpg|png|gif|bmp|jpeg))$)";
 
     public boolean isAllowedExtenstion(final String fileName, final String pattern) {
         final Matcher matcher = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE).matcher(fileName);

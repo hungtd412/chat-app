@@ -40,7 +40,7 @@ public class MessageServiceImpl implements MessageService {
             throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
         }
 
-        validateUserInConversation(conversationId, userService.currentUser().getId());
+        conversationService.validateUserInConversation(conversationId, userService.currentUser().getId());
 
         return messageRepository.findAllByConversationIdOrderByIdDesc(conversationId);
     }
@@ -75,7 +75,7 @@ public class MessageServiceImpl implements MessageService {
 
         Conversation conversation = conversationService.getConversationById(messageRequest.getConversationId());
 
-        validateUserInConversation(conversation.getId(), currentUser.getId());
+        conversationService.validateUserInConversation(conversation.getId(), currentUser.getId());
 
         Message message = messageMapper.toMessage(messageRequest, conversation, currentUser.getId());
 
@@ -90,11 +90,5 @@ public class MessageServiceImpl implements MessageService {
         String username = webSocketService.extractUsernameFromHeader(headerAccessor);
 
         return userService.findByUsername(username);
-    }
-
-    private void validateUserInConversation(Long conversationId, Long userId) {
-        if (!conversationService.isUserInConversation(conversationId, userId)) {
-            throw new AppException(ErrorCode.USER_NOT_IN_CONVERSATION);
-        }
     }
 }

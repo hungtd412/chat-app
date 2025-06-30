@@ -71,12 +71,18 @@ public enum ErrorCode {
     EMPTY_CONVERSATION_ID(1085, "ID của cuộc hội thoại không được để trống!", 400),
     MISSING_CONTENT_FIELD(1086, "Trường content bị thiếu!", 400),
     EMPTY_MESSAGE_TYPE(1087, "Loại tin nhắn không được để trống!", 400),
+    EMPTY_CONVERSATION_TITLE(1088, "Tên cuộc hội thoại không được để trống!", 400),
+    MIN_CONVERSATION_TITLE_LENGTH(1089, "Tên cuộc hội thoại phải có ít nhất 1 ký tự!", 400),
+    MAX_CONVERSATION_TITLE_LENGTH(1090, "Tên cuộc hội thoại không được vượt quá 50 ký tự!", 400),
+    GROUP_CONVERSATION_TYPE_REQUIRED(1091, "Yêu cầu cuộc hội thoại nhóm!", 400),
 
-    //UPLOAD FILE 109X
-    UPLOAD_FILE_FAIL(1090, "Có lỗi xảy ra khi tải lên file!", 500),
-    DELETE_FILE_FAIL(1091, "Có lỗi xảy ra khi xóa file!", 500),
-    INVALID_FILE_TYPE(1092, "Định dạng file không hợp lệ!", 400),
-    MAX_FILE_SIZE(1093, "Kích thước file tối đa là 20MB!", 400)
+
+    //UPLOAD FILE 200X
+    UPLOAD_FILE_FAIL(2000, "Có lỗi xảy ra khi tải lên file!", 500),
+    DELETE_FILE_FAIL(2001, "Có lỗi xảy ra khi xóa file!", 500),
+    INVALID_FILE_TYPE(2002, "Định dạng file không hợp lệ!", 400),
+    MAX_FILE_SIZE(2003, "Kích thước file tối đa là 20MB!", 400),
+    FILE_REQUIRED(2004, "Kích thước file tối đa là 20MB!", 400)
     ;
 
 

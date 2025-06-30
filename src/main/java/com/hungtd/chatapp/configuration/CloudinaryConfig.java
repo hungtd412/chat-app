@@ -24,6 +24,10 @@ public class CloudinaryConfig {
 
     public static String CLOUDINARY_DEFAULT_AVATAR_PUBLICID= "default-avatar_nhpbje";
 
+    public static String CLOUDINARY_DEFAULT_GROUP_URL = "https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png";
+
+    public static String CLOUDINARY_DEFAULT_GROUP_PUBLICID= "default_group_image_la4psw";
+
     @Bean
     public Cloudinary getCloudinary(){
         return new Cloudinary(ObjectUtils.asMap(

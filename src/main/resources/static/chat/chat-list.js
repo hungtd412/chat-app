@@ -71,7 +71,7 @@ $(document).on('click', '#new-conversation-btn', function() {
 // Functions for managing conversations
 function loadConversations() {
     $.ajax({
-        url: 'http://localhost:9000/conversations',
+        url: 'http://localhost:9000/conversations/current-user',
         type: 'GET',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')

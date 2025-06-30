@@ -167,7 +167,7 @@ function loadConversations() {
 
     // Otherwise fetch conversations
     $.ajax({
-        url: 'http://localhost:9000/conversations',
+        url: 'http://localhost:9000/conversations/current-user',
         type: 'GET',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')

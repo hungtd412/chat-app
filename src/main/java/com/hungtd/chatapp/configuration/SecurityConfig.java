@@ -26,34 +26,36 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Value("${fe.url}")
-    private String feUrl;
-
     private final String[] PUBLIC_ENDPOINTS = {
             "/auth/log-in",
             "/auth/log-out",
             "/auth/introspect",
             "/auth/refresh",
-            "/users",
             "/ws/**",
-            "/api/chat/public/**"
+            "/api/chat/public/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/swagger-resources/**",
+            "/v3/api-docs/**",
+            "/webjars/**"
     };
-
     @Autowired
     CustomJwtDecoder customJwtDecoder;
+    @Value("${fe.url}")
+    private String feUrl;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(requests -> requests
-                        .requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
-                        .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
-                        .anyRequest().authenticated()
+                .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
+                .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
+                .anyRequest().authenticated()
         );
 
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
-                        jwtConfigurer.decoder(customJwtDecoder)
+                                jwtConfigurer.decoder(customJwtDecoder)
                         )
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
         );
@@ -72,7 +74,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

@@ -14,11 +14,4 @@ public class UserNameAndAvatarResponse {
     String friendName;
     String avtUrl;
     Long conversationId;
-    
-    // Constructor without conversationId for backward compatibility
-    public UserNameAndAvatarResponse(Long id, String friendName, String avtUrl) {
-        this.id = id;
-        this.friendName = friendName;
-        this.avtUrl = avtUrl;
-    }
 }

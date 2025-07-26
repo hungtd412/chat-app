@@ -524,7 +524,7 @@
                             alert('Could not open chat. Please try again later.');
                         }
                     });
-                    
+
                     // Remove friend button handler
                     $('.remove-button').click(function() {
                         const friendId = $(this).data('id');
@@ -534,11 +534,11 @@
                     $('.friends-container').html('<div class="no-friends">No friends to display.</div>');
                 }
             }
-            
+
             // Function to load friend requests
             function loadFriendRequests() {
                 $('.requests-container').html('<div class="loading">Loading friend requests...</div>');
-                
+
                 $.ajax({
                     url: 'http://localhost:9000/friend-requests',
                     type: 'GET',
@@ -558,11 +558,11 @@
                     }
                 });
             }
-            
+
             // Function to search users
             function searchUsers(searchTerm) {
                 $('.search-results').html('<div class="loading">Searching...</div>');
-                
+
                 $.ajax({
                     url: `http://localhost:9000/users/search?q=${searchTerm}`,
                     type: 'GET',
@@ -582,7 +582,7 @@
                     }
                 });
             }
-            
+
             // Function to display friend requests
             function displayFriendRequests(requests) {
                 const requestsHtml = requests.map(request => {
@@ -605,28 +605,28 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 $('.requests-container').html(requestsHtml);
-                
+
                 // Accept request button handler
                 $('.accept-button').click(function() {
                     const requestId = $(this).data('id');
                     acceptFriendRequest(requestId);
                 });
-                
+
                 // Reject request button handler
                 $('.reject-button').click(function() {
                     const requestId = $(this).data('id');
                     rejectFriendRequest(requestId);
                 });
             }
-            
+
             // Function to display search results
             function displaySearchResults(users) {
                 const resultsHtml = users.map(user => {
                     const initials = getInitials(user.firstName, user.lastName);
                     let actionButton;
-                    
+
                     if (user.isFriend) {
                         actionButton = `
                             <button class="action-button message-button" data-id="${user.id}" data-conversation-id="${user.conversationId}">
@@ -646,7 +646,7 @@
                             </button>
                         `;
                     }
-                    
+
                     return `
                         <div class="friend-card" data-id="${user.id}">
                             <div class="friend-avatar">${initials}</div>
@@ -660,15 +660,15 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 $('.search-results').html(resultsHtml);
-                
+
                 // Add friend button handler
                 $('.add-button').click(function() {
                     const userId = $(this).data('id');
                     sendFriendRequest(userId);
                 });
-                
+
                 // Message button handler in search results
                 $('.search-results .message-button').click(function() {
                     const conversationId = $(this).data('conversation-id');
@@ -680,7 +680,7 @@
                     }
                 });
             }
-            
+
             // Helper function to get initials from full name
             function getInitialsFromName(fullName) {
                 if (!fullName) return '';
@@ -695,7 +695,7 @@
             function getInitials(firstName, lastName) {
                 return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
             }
-            
+
             // Function to send a friend request
             function sendFriendRequest(receiverId) {
                 $.ajax({
@@ -720,7 +720,7 @@
                     }
                 });
             }
-            
+
             // Function to accept a friend request
             function acceptFriendRequest(requestId) {
                 $.ajax({
@@ -740,7 +740,7 @@
                     }
                 });
             }
-            
+
             // Function to reject a friend request
             function rejectFriendRequest(requestId) {
                 $.ajax({
@@ -759,7 +759,7 @@
                     }
                 });
             }
-            
+
             // Function to remove a friend
             function removeFriend(friendId) {
                 if (confirm('Are you sure you want to remove this friend?')) {
@@ -780,7 +780,7 @@
                     });
                 }
             }
-            
+
             // Function to start a chat with a friend (fallback for when conversation ID isn't available)
             function startChatWithFriend(friendId) {
                 $.ajax({

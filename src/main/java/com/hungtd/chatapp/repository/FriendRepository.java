@@ -28,12 +28,14 @@ public interface FriendRepository extends JpaRepository<Friend, FriendId> {
             "    FROM participants p " +
             "    JOIN conversations c ON p.conversation_id = c.id " +
             "    WHERE (p.user_id = :userId OR p.user_id = u.id) and c.type = 'PRIVATE' " +
-            "GROUP BY p.conversation_id " +
-            "HAVING COUNT(DISTINCT p.user_id) = 2) as conversationId " +
-            "FROM friends f " +
-            "JOIN users u ON (CASE WHEN f.user_id_1 = :userId THEN " +
-            "f.user_id_2 ELSE f.user_id_1 END) = u.id " +
-            "WHERE f.user_id_1 = :userId OR f.user_id_2 = :userId ",
+            " GROUP BY p.conversation_id " +
+            " HAVING COUNT(DISTINCT p.user_id) = 2) as conversationId " +
+            " FROM friends f " +
+            " JOIN users u ON (CASE WHEN f.user_id_1 = :userId THEN " +
+            " f.user_id_2 ELSE f.user_id_1 END) = u.id " +
+            " WHERE f.user_id_1 = :userId OR f.user_id_2 = :userId ",
+            countQuery = "SELECT COUNT(*) FROM friends f " +
+                    "WHERE f.user_id_1 = :userId OR f.user_id_2 = :userId",
             nativeQuery = true)
     Page<UserNameAndAvatarResponse> findFriendsWithDetailsPaged(
             @Param("userId") Long userId, Pageable pageable);

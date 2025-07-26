@@ -13,7 +13,7 @@ import jakarta.validation.constraints.NotNull;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class MessageRequest {
+public class CreateMessageRequest {
     @NotNull(message = "EMPTY_CONVERSATION_ID")
     private Long conversationId;
     

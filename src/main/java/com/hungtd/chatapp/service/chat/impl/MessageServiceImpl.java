@@ -1,13 +1,12 @@
 package com.hungtd.chatapp.service.chat.impl;
 
-import com.hungtd.chatapp.dto.request.MessageRequest;
+import com.hungtd.chatapp.dto.request.CreateMessageRequest;
 import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.*;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.MessageMapper;
 import com.hungtd.chatapp.repository.MessageRepository;
-import com.hungtd.chatapp.repository.UserRepository;
 import com.hungtd.chatapp.service.chat.MessageService;
 import com.hungtd.chatapp.service.conversation.ConversationService;
 import com.hungtd.chatapp.service.user.UserService;
@@ -65,7 +64,7 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     @Transactional
-    public void processChatMessage(MessageRequest messageRequest, StompHeaderAccessor headerAccessor) {
+    public void processChatMessage(CreateMessageRequest createMessageRequest, StompHeaderAccessor headerAccessor) {
         //Flow: get user information -> check user in the conversation
         // -> send websocket -> save
 
@@ -73,11 +72,11 @@ public class MessageServiceImpl implements MessageService {
         //we get the user sending message based on it
         User currentUser = getUserFromStompHeader(headerAccessor);
 
-        Conversation conversation = conversationService.getConversationById(messageRequest.getConversationId());
+        Conversation conversation = conversationService.getConversationById(createMessageRequest.getConversationId());
 
         conversationService.validateUserInConversation(conversation.getId(), currentUser.getId());
 
-        Message message = messageMapper.toMessage(messageRequest, conversation, currentUser.getId());
+        Message message = messageMapper.toMessage(createMessageRequest, conversation, currentUser.getId());
 
         // Save message to database
         messageRepository.save(message);

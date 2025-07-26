@@ -1,6 +1,6 @@
 package com.hungtd.chatapp.mapper;
 
-import com.hungtd.chatapp.dto.request.MessageRequest;
+import com.hungtd.chatapp.dto.request.CreateMessageRequest;
 import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Message;
@@ -28,9 +28,9 @@ public interface MessageMapper {
     MessageResponse toMessageResponse(Message message, Long conversationId, String senderName, String senderAvtUrl, Boolean isBelongCurrentUser);
     
     /**
-     * Maps a MessageRequest to a Message entity
+     * Maps a CreateMessageRequest to a Message entity
      *
-     * @param messageRequest the source MessageRequest DTO
+     * @param createMessageRequest the source CreateMessageRequest DTO
      * @param conversation the conversation associated with the message
      * @param senderId the ID of the user sending the message
      * @return the mapped Message entity
@@ -38,9 +38,9 @@ public interface MessageMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "conversation", source = "conversation")
     @Mapping(target = "senderId", source = "senderId")
-    @Mapping(target = "message", source = "messageRequest.content") // Map messageRequest.content to message
-    @Mapping(target = "type", source = "messageRequest.type")
-    Message toMessage(MessageRequest messageRequest, Conversation conversation, Long senderId);
+    @Mapping(target = "message", source = "createMessageRequest.content") // Map createMessageRequest.content to message
+    @Mapping(target = "type", source = "createMessageRequest.type")
+    Message toMessage(CreateMessageRequest createMessageRequest, Conversation conversation, Long senderId);
 
     /**
      * Maps a list of Message entities to MessageResponse DTOs with current user ownership information

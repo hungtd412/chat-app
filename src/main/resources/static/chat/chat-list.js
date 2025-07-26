@@ -4,7 +4,7 @@ if (window.location.pathname.includes('chat-list.html')) {
     $(document).ready(function() {
         // Check if user is logged in by verifying token in localStorage
         const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token'); 
+        const refreshToken = localStorage.getItem('refresh_token');
         if (!token || !refreshToken) {
             window.location.href = '../signin/signin.html';
             return;
@@ -12,18 +12,6 @@ if (window.location.pathname.includes('chat-list.html')) {
 
         loadConversations();
 
-        // Click handler for conversation selection in standalone mode
-        $(document).on('click', '.conversation-item', function() {
-            $('.conversation-item').removeClass('active');
-            $(this).addClass('active');
-
-            const conversationId = $(this).data('id');
-            const isPrivate = $(this).data('type') === 'PRIVATE';
-
-            // Navigate to main-screen with the selected conversation
-            window.location.href = `../mainscreen/main-screen.html?id=${conversationId}&type=${isPrivate ? 'PRIVATE' : 'GROUP'}`;
-        });
-        
         // Add logout button for standalone mode only
         $('.sidebar').append(`
             <div class="sidebar-footer">
@@ -33,7 +21,7 @@ if (window.location.pathname.includes('chat-list.html')) {
                 </button>
             </div>
         `);
-        
+
         // Logout button handler for standalone mode
         $(document).on('click', '#standalone-logout-button', function() {
             // Call the logout function in parent window if it exists
@@ -137,7 +125,7 @@ function renderConversations(conversations) {
 
         conversationList.append(conversationItem);
     });
-    
+
     // Check if there are any stored unread counts to restore
     restoreUnreadCounts();
 }
@@ -173,11 +161,11 @@ function updateUnreadCount(conversationId) {
     console.log("updateUnreadCount for conversation", conversationId);
     // Find the conversation item in the list
     const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    
+
     if (conversationItem.length > 0) {
         // Check if there's already an unread badge
         let unreadBadge = conversationItem.find('.unread-badge');
-        
+
         if (unreadBadge.length === 0) {
             // Create badge if it doesn't exist
             conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
@@ -190,7 +178,7 @@ function updateUnreadCount(conversationId) {
         // If conversation not in the list (e.g., a new conversation), refresh the conversation list
         loadConversations();
     }
-    
+
     // Update total unread count in page title
     updatePageTitle();
 }
@@ -207,7 +195,7 @@ function clearUnreadBadge(conversationItem) {
         const conversationId = conversationItem.data('id');
         unreadBadge.remove();
         updatePageTitle();
-        
+
         // Remove this conversation from stored unread counts in session storage
         const storedCounts = sessionStorage.getItem('unreadCounts');
         if (storedCounts) {
@@ -231,12 +219,12 @@ window.clearUnreadBadge = clearUnreadBadge;
  */
 function updatePageTitle() {
     let totalUnread = 0;
-    
+
     // Count all unread messages across conversations
     $('.unread-badge').each(function() {
         totalUnread += parseInt($(this).text()) || 0;
     });
-    
+
     // Update page title
     if (totalUnread > 0) {
         document.title = `(${totalUnread}) Chat Application`;
@@ -266,7 +254,7 @@ function getAvatarInitial(name) {
  */
 function storeUnreadCounts() {
     const unreadCounts = {};
-    
+
     $('.conversation-item').each(function() {
         const id = $(this).data('id');
         const badge = $(this).find('.unread-badge');
@@ -274,7 +262,7 @@ function storeUnreadCounts() {
             unreadCounts[id] = badge.text();
         }
     });
-    
+
     if (Object.keys(unreadCounts).length > 0) {
         sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
     }
@@ -290,17 +278,17 @@ function restoreUnreadCounts() {
     if (storedCounts) {
         try {
             const unreadCounts = JSON.parse(storedCounts);
-            
+
             for (const [id, count] of Object.entries(unreadCounts)) {
                 const conversationItem = $(`.conversation-item[data-id="${id}"]`);
                 if (conversationItem.length > 0) {
                     conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
                 }
             }
-            
+
             // Update the page title
             updatePageTitle();
-            
+
         } catch (e) {
             console.error('Error restoring unread counts:', e);
         }

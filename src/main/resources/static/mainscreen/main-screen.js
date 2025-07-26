@@ -2,7 +2,7 @@ $(document).ready(function() {
     // Check if user is logged in by verifying both tokens in localStorage
     const accessToken = localStorage.getItem('access_token');
     const refreshToken = localStorage.getItem('refresh_token');
-    
+
     if (!accessToken || !refreshToken) {
         window.location.href = '../signin/signin.html';
         return;
@@ -12,7 +12,24 @@ $(document).ready(function() {
     $('#sidebar-container').load('../chat/chat-list.html', function() {
         console.log('Chat list component loaded');
         // After loading the component, initialize conversations
-        loadConversations();
+        loadConversations().then(() => {
+            // Check if there's a conversation ID in the URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const conversationId = urlParams.get('conversation');
+
+            if (conversationId) {
+                // Find the conversation item and simulate a click
+                const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+                if (conversationItem.length > 0) {
+                    console.log(`Opening conversation ${conversationId} from URL parameter`);
+                    conversationItem.click();
+                } else {
+                    console.log(`Conversation ${conversationId} not found in list, will load directly`);
+                    // If we couldn't find the conversation in the list, load it directly
+                    loadConversationDetails(conversationId);
+                }
+            }
+        });
         connectToWebSocket();
     });
 
@@ -33,19 +50,24 @@ $(document).ready(function() {
     $(document).on('click', '.conversation-item', function() {
         $('.conversation-item').removeClass('active');
         $(this).addClass('active');
-        
+
         const conversationId = $(this).data('id');
         const conversationType = $(this).data('type');
         const displayName = $(this).find('.conversation-name').text();
-        
+
+        // Update URL with conversation ID without reloading the page
+        const url = new URL(window.location.href);
+        url.searchParams.set('conversation', conversationId);
+        window.history.pushState({ conversationId }, '', url);
+
         // Clear unread badge when conversation is clicked
         clearUnreadBadge($(this));
-        
+
         // Delegate loading the chat component to chat.js
         loadChatInContainer(
-            $('#chat-container'), 
-            conversationId, 
-            conversationType, 
+            $('#chat-container'),
+            conversationId,
+            conversationType,
             displayName,
             stompClient
         );
@@ -56,7 +78,7 @@ $(document).ready(function() {
         // Navigate to new conversation page or show modal
         alert('New conversation feature coming soon!');
     });
-    
+
     // Send message button click handler
     $(document).on('click', '#send-message-btn', function() {
         const conversationId = $(this).data('conversation-id');
@@ -70,7 +92,7 @@ $(document).ready(function() {
             sendMessage(conversationId, stompClient);
         }
     });
-    
+
     // Logout button click handler
     $('#logout-button').click(function() {
         handleLogout();
@@ -91,26 +113,26 @@ function connectToWebSocket() {
         console.error('No token found, cannot establish WebSocket connection');
         return;
     }
-    
+
     // Fix the WebSocket URL to include the full URL with port
     const socket = new SockJS('http://localhost:9000/ws');
     stompClient = Stomp.over(socket);
-    
+
     // Store in global window object for access from other pages
     window.stompClient = stompClient;
-    
+
     // Disable debug messages
     stompClient.debug = null;
-    
+
     // Add JWT authentication header
     const headers = {
         'Authorization': 'Bearer ' + token
     };
-    
+
     // Connect to the WebSocket and subscribe to personal queue
     stompClient.connect(headers, function(frame) {
         console.log('Connected to WebSocket');
-        
+
         // Get username from token
         const username = getUsernameFromToken(token);
 
@@ -131,15 +153,15 @@ function onMessageReceived(payload) {
     try {
         const message = JSON.parse(payload.body);
         console.log('Received message in main-screen:', message);
-        
+
         const conversationId = message.conversationId;
-        
+
         // Move conversation to top regardless of whether it's active or not
         moveConversationToTop(conversationId);
-        
+
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');
-        
+
         if (activeConversationId && activeConversationId === conversationId) {
             // If we're viewing this conversation, delegate message handling to chat.js
             handleIncomingMessage(payload, conversationId);
@@ -158,28 +180,68 @@ function playNotificationSound() {
     audio.play().catch(e => console.log('Error playing notification sound:', e));
 }
 
+// Make loadConversations return a promise so we can chain operations
 function loadConversations() {
-    // If we already have conversations loaded, use them
-    if (userConversations.length > 0) {
-        displayConversations(userConversations);
-        return;
-    }
+    return new Promise((resolve, reject) => {
+        // If we already have conversations loaded, use them
+        if (userConversations.length > 0) {
+            displayConversations(userConversations);
+            resolve(userConversations);
+            return;
+        }
 
-    // Otherwise fetch conversations
+        // Otherwise fetch conversations
+        $.ajax({
+            url: 'http://localhost:9000/conversations/current-user',
+            type: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+            },
+            success: function(response) {
+                // Store conversations in local variable
+                userConversations = response.data || [];
+                displayConversations(userConversations);
+                resolve(userConversations);
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading conversations:', error);
+                $('#conversation-list').html('<div class="error">Error loading conversations. Please try again later.</div>');
+                reject(error);
+            }
+        });
+    });
+}
+
+// Function to load conversation details when not in the list
+function loadConversationDetails(conversationId) {
     $.ajax({
-        url: 'http://localhost:9000/conversations/current-user',
+        url: `http://localhost:9000/conversations/${conversationId}`,
         type: 'GET',
         headers: {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         },
         success: function(response) {
-            // Store conversations in local variable
-            userConversations = response.data || [];
-            displayConversations(userConversations);
+            if (response.data) {
+                const conversation = response.data;
+
+                // Update URL with conversation ID without reloading the page
+                const url = new URL(window.location.href);
+                url.searchParams.set('conversation', conversationId);
+                window.history.pushState({ conversationId }, '', url);
+
+                // Delegate loading the chat component
+                loadChatInContainer(
+                    $('#chat-container'),
+                    conversation.id,
+                    conversation.type,
+                    conversation.type === 'PRIVATE' ? conversation.friendName : conversation.title,
+                    stompClient
+                );
+            }
         },
         error: function(xhr, status, error) {
-            console.error('Error loading conversations:', error);
-            $('#conversation-list').html('<div class="error">Error loading conversations. Please try again later.</div>');
+            console.error(`Error loading conversation ${conversationId}:`, error);
+            $('#chat-container').html('<div class="error">Could not load conversation. Please try again later.</div>');
         }
     });
 }

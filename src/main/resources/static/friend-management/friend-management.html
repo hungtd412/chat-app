@@ -139,7 +139,7 @@
 
         .search-placeholder {
             text-align: center;
-            color: #7f8c8d;
+            color: #7f8c8c;
             padding: 30px;
         }
 
@@ -221,6 +221,45 @@
             color: #7f8c8d;
             padding: 30px;
         }
+
+        /* Pagination styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination button {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #007bff;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination button:hover {
+            background-color: #e9ecef;
+        }
+
+        .pagination button:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .pagination button.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination-info {
+            text-align: center;
+            color: #6c757d;
+            margin-top: 10px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -239,6 +278,9 @@
                 <h2>My Friends</h2>
                 <div class="friends-container">
                     <div class="loading">Loading friends...</div>
+                </div>
+                <div class="pagination-container">
+                    <!-- Pagination buttons will be added here -->
                 </div>
             </div>
             <div class="tab-content" id="friend-requests">
@@ -269,6 +311,12 @@
                 window.location.href = '../signin/signin.html';
                 return;
             }
+            
+            // Store pagination state
+            let currentPage = 0;
+            const pageSize = 2;
+            let totalPages = 0;
+            let totalElements = 0;
             
             // Load paginator into the container
             $('#paginator-container').load('../paginator/paginator.html', function() {
@@ -308,14 +356,14 @@
                 
                 // Load content based on selected tab
                 if (tabId === 'friends-list') {
-                    loadFriends();
+                    loadFriends(currentPage);
                 } else if (tabId === 'friend-requests') {
                     loadFriendRequests();
                 }
             });
             
             // Initial content load
-            loadFriends();
+            loadFriends(currentPage);
             
             // Search button click handler
             $('#search-button').click(function() {
@@ -335,34 +383,162 @@
                 }
             });
             
-            // Function to load friends list
-            function loadFriends() {
+            // Function to load friends list with pagination
+            function loadFriends(page) {
                 $('.friends-container').html('<div class="loading">Loading friends...</div>');
-                
+                console.log("Loading friends for page:", page);
+
                 $.ajax({
-                    url: 'http://localhost:9000/friends',
+                    url: `http://localhost:9000/friends?page=${page}&size=${pageSize}`,
                     type: 'GET',
                     headers: {
                         'Authorization': 'Bearer ' + token
                     },
                     success: function(response) {
-                        if (response.data && response.data.length > 0) {
-                            displayFriends(response.data);
+                        console.log("Friends API response:", response);
+                        if (response && response.data) {
+                            // Update pagination state
+                            currentPage = response.data.number;
+                            totalPages = response.data.totalPages;
+                            totalElements = response.data.totalElements;
+                            
+                            // Display friends list - handle both array and object with content
+                            const friendsList = Array.isArray(response.data.content) ? 
+                                response.data.content : 
+                                (response.data.content || []);
+                            
+                            if (friendsList.length > 0) {
+                                // Display friends list
+                                displayFriends(friendsList);
+                                
+                                // Update pagination UI
+                                renderPagination();
+                            } else {
+                                $('.friends-container').html('<div class="no-friends">You don\'t have any friends yet.</div>');
+                                $('.pagination-container').empty();
+                            }
                         } else {
-                            $('.friends-container').html('<div class="no-friends">You don\'t have any friends yet.</div>');
+                            $('.friends-container').html('<div class="no-friends">No friends data available.</div>');
+                            $('.pagination-container').empty();
                         }
                     },
                     error: function(xhr, status, error) {
                         console.error('Error loading friends:', error);
+                        console.error('Response:', xhr.responseText);
                         $('.friends-container').html('<div class="error">Failed to load friends. Please try again later.</div>');
                     }
                 });
             }
             
+            // Function to render pagination controls
+            function renderPagination() {
+                if (totalPages <= 1) {
+                    $('.pagination-container').empty();
+                    return;
+                }
+                
+                let paginationHtml = '<div class="pagination">';
+                
+                // Previous button
+                paginationHtml += `<button ${currentPage === 0 ? 'disabled' : ''} class="prev-page">&laquo; Previous</button>`;
+                
+                // Page numbers
+                for (let i = 0; i < totalPages; i++) {
+                    paginationHtml += `<button class="page-number ${currentPage === i ? 'active' : ''}" data-page="${i}">${i + 1}</button>`;
+                }
+                
+                // Next button
+                paginationHtml += `<button ${currentPage === totalPages - 1 ? 'disabled' : ''} class="next-page">Next &raquo;</button>`;
+                
+                paginationHtml += '</div>';
+                
+                // Add pagination info
+                paginationHtml += `<div class="pagination-info">Showing ${currentPage * pageSize + 1} to ${Math.min((currentPage + 1) * pageSize, totalElements)} of ${totalElements} friends</div>`;
+                
+                $('.pagination-container').html(paginationHtml);
+                
+                // Add event listeners for pagination buttons
+                $('.prev-page').click(function() {
+                    if (currentPage > 0) {
+                        loadFriends(currentPage - 1);
+                    }
+                });
+                
+                $('.next-page').click(function() {
+                    if (currentPage < totalPages - 1) {
+                        loadFriends(currentPage + 1);
+                    }
+                });
+                
+                $('.page-number').click(function() {
+                    const pageNum = $(this).data('page');
+                    if (pageNum !== currentPage) {
+                        loadFriends(pageNum);
+                    }
+                });
+            }
+            
+            // Function to display friends
+            function displayFriends(friends) {
+                console.log("Displaying friends:", friends);
+                
+                const friendsHtml = friends.map(friend => {
+                    // Ensure friend has all expected properties
+                    if (!friend) return '';
+                    
+                    const friendName = friend.friendName || 'Unknown';
+                    const avtUrl = friend.avtUrl || '';
+                    const initials = getInitialsFromName(friendName);
+                    
+                    return `
+                        <div class="friend-card" data-id="${friend.id}">
+                            <div class="friend-avatar" style="background-image: url('${avtUrl}'); background-size: cover;">
+                                ${!avtUrl ? initials : ''}
+                            </div>
+                            <div class="friend-info">
+                                <div class="friend-name">${friendName}</div>
+                            </div>
+                            <div class="friend-actions">
+                                <button class="action-button message-button" data-id="${friend.id}" data-conversation-id="${friend.conversationId || ''}">
+                                    <i class="fas fa-comment"></i> Message
+                                </button>
+                                <button class="action-button remove-button" data-id="${friend.id}">
+                                    <i class="fas fa-user-minus"></i> Remove
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                if (friendsHtml) {
+                    $('.friends-container').html(friendsHtml);
+                    
+                    // Message button handler
+                    $('.message-button').click(function() {
+                        const conversationId = $(this).data('conversation-id');
+                        // Navigate to chat with this friend using the conversation ID directly
+                        if (conversationId) {
+                            window.location.href = `../mainscreen/main-screen.html?conversation=${conversationId}`;
+                        } else {
+                            console.error('No conversation ID available for this friend');
+                            alert('Could not open chat. Please try again later.');
+                        }
+                    });
+
+                    // Remove friend button handler
+                    $('.remove-button').click(function() {
+                        const friendId = $(this).data('id');
+                        removeFriend(friendId);
+                    });
+                } else {
+                    $('.friends-container').html('<div class="no-friends">No friends to display.</div>');
+                }
+            }
+
             // Function to load friend requests
             function loadFriendRequests() {
                 $('.requests-container').html('<div class="loading">Loading friend requests...</div>');
-                
+
                 $.ajax({
                     url: 'http://localhost:9000/friend-requests',
                     type: 'GET',
@@ -382,11 +558,11 @@
                     }
                 });
             }
-            
+
             // Function to search users
             function searchUsers(searchTerm) {
                 $('.search-results').html('<div class="loading">Searching...</div>');
-                
+
                 $.ajax({
                     url: `http://localhost:9000/users/search?q=${searchTerm}`,
                     type: 'GET',
@@ -406,47 +582,7 @@
                     }
                 });
             }
-            
-            // Function to display friends
-            function displayFriends(friends) {
-                const friendsHtml = friends.map(friend => {
-                    const initials = getInitials(friend.firstName, friend.lastName);
-                    return `
-                        <div class="friend-card" data-id="${friend.id}">
-                            <div class="friend-avatar">${initials}</div>
-                            <div class="friend-info">
-                                <div class="friend-name">${friend.firstName} ${friend.lastName}</div>
-                                <div class="friend-username">@${friend.username}</div>
-                            </div>
-                            <div class="friend-actions">
-                                <button class="action-button message-button" data-id="${friend.id}">
-                                    <i class="fas fa-comment"></i> Message
-                                </button>
-                                <button class="action-button remove-button" data-id="${friend.id}">
-                                    <i class="fas fa-user-minus"></i> Remove
-                                </button>
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-                
-                $('.friends-container').html(friendsHtml);
-                
-                // Message button handler
-                $('.message-button').click(function() {
-                    const friendId = $(this).data('id');
-                    // Navigate to chat with this friend
-                    // This would likely create or find an existing conversation
-                    startChatWithFriend(friendId);
-                });
-                
-                // Remove friend button handler
-                $('.remove-button').click(function() {
-                    const friendId = $(this).data('id');
-                    removeFriend(friendId);
-                });
-            }
-            
+
             // Function to display friend requests
             function displayFriendRequests(requests) {
                 const requestsHtml = requests.map(request => {
@@ -469,31 +605,31 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 $('.requests-container').html(requestsHtml);
-                
+
                 // Accept request button handler
                 $('.accept-button').click(function() {
                     const requestId = $(this).data('id');
                     acceptFriendRequest(requestId);
                 });
-                
+
                 // Reject request button handler
                 $('.reject-button').click(function() {
                     const requestId = $(this).data('id');
                     rejectFriendRequest(requestId);
                 });
             }
-            
+
             // Function to display search results
             function displaySearchResults(users) {
                 const resultsHtml = users.map(user => {
                     const initials = getInitials(user.firstName, user.lastName);
                     let actionButton;
-                    
+
                     if (user.isFriend) {
                         actionButton = `
-                            <button class="action-button message-button" data-id="${user.id}">
+                            <button class="action-button message-button" data-id="${user.id}" data-conversation-id="${user.conversationId}">
                                 <i class="fas fa-comment"></i> Message
                             </button>
                         `;
@@ -510,7 +646,7 @@
                             </button>
                         `;
                     }
-                    
+
                     return `
                         <div class="friend-card" data-id="${user.id}">
                             <div class="friend-avatar">${initials}</div>
@@ -524,27 +660,42 @@
                         </div>
                     `;
                 }).join('');
-                
+
                 $('.search-results').html(resultsHtml);
-                
+
                 // Add friend button handler
                 $('.add-button').click(function() {
                     const userId = $(this).data('id');
                     sendFriendRequest(userId);
                 });
-                
+
                 // Message button handler in search results
                 $('.search-results .message-button').click(function() {
-                    const friendId = $(this).data('id');
-                    startChatWithFriend(friendId);
+                    const conversationId = $(this).data('conversation-id');
+                    if (conversationId) {
+                        window.location.href = `../mainscreen/main-screen.html?conversation=${conversationId}`;
+                    } else {
+                        const friendId = $(this).data('id');
+                        startChatWithFriend(friendId);
+                    }
                 });
             }
-            
-            // Helper function to get initials from name
+
+            // Helper function to get initials from full name
+            function getInitialsFromName(fullName) {
+                if (!fullName) return '';
+                return fullName.split(' ')
+                    .map(name => name.charAt(0))
+                    .join('')
+                    .slice(0, 2)
+                    .toUpperCase();
+            }
+
+            // Function to get initials from separate first and last name
             function getInitials(firstName, lastName) {
                 return (firstName ? firstName[0] : '') + (lastName ? lastName[0] : '');
             }
-            
+
             // Function to send a friend request
             function sendFriendRequest(receiverId) {
                 $.ajax({
@@ -569,7 +720,7 @@
                     }
                 });
             }
-            
+
             // Function to accept a friend request
             function acceptFriendRequest(requestId) {
                 $.ajax({
@@ -589,7 +740,7 @@
                     }
                 });
             }
-            
+
             // Function to reject a friend request
             function rejectFriendRequest(requestId) {
                 $.ajax({
@@ -608,7 +759,7 @@
                     }
                 });
             }
-            
+
             // Function to remove a friend
             function removeFriend(friendId) {
                 if (confirm('Are you sure you want to remove this friend?')) {
@@ -629,8 +780,8 @@
                     });
                 }
             }
-            
-            // Function to start a chat with a friend
+
+            // Function to start a chat with a friend (fallback for when conversation ID isn't available)
             function startChatWithFriend(friendId) {
                 $.ajax({
                     url: `http://localhost:9000/conversations/private/${friendId}`,

@@ -1,6 +1,6 @@
 package com.hungtd.chatapp.controller;
 
-import com.hungtd.chatapp.dto.request.MessageRequest;
+import com.hungtd.chatapp.dto.request.CreateMessageRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.Message;
@@ -46,9 +46,9 @@ public class MessageController {
     }
 
     @MessageMapping("/chat.send")
-    public void handleChatMessage(@Payload @Valid MessageRequest messageRequest, StompHeaderAccessor headerAccessor) {
-        log.debug("Handling chat message for conversation: {}", messageRequest.getConversationId());
+    public void handleChatMessage(@Payload @Valid CreateMessageRequest createMessageRequest, StompHeaderAccessor headerAccessor) {
+        log.debug("Handling chat message for conversation: {}", createMessageRequest.getConversationId());
         
-        messageService.processChatMessage(messageRequest, headerAccessor);
+        messageService.processChatMessage(createMessageRequest, headerAccessor);
     }
 }

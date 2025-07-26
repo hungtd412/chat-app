@@ -117,9 +117,10 @@ public class AppInitConfig {
                 log.warn("Created 5 default users: hung, trang, thuy, vinh, nam (all with password '123')");
             }
 
-            // After creating users, create additional data
+            // After creating users, create additional data in the correct order
+            // First create friendships, then create conversations only between friends
             createFriendships(userRepository);
-            createConversations(userRepository);
+            createConversationsForFriends(userRepository);
             createFriendRequests(userRepository);
         };
     }
@@ -130,7 +131,10 @@ public class AppInitConfig {
             return;
         }
 
-        List<User> users = userRepository.findAll();
+        List<User> users = userRepository.findAll().stream()
+                .filter(user -> !user.getUsername().equals("admin"))
+                .toList();
+                
         if (users.size() < 5) {
             log.warn("Not enough users to create friendships");
             return;
@@ -159,16 +163,23 @@ public class AppInitConfig {
                 .userId2(users.get(3).getId())
                 .build();
 
+        // Thuy (2) is friends with Vinh (3)
+        Friend friendship3 = Friend.builder()
+                .userId1(users.get(2).getId())
+                .userId2(users.get(3).getId())
+                .build();
+
         friends.add(friendship1);
         friends.add(friendship2);
+        friends.add(friendship3);
 
         friendRepository.saveAll(friends);
         log.info("Created {} friendships", friends.size());
     }
 
-    private void createConversations(UserRepository userRepository) {
+    private void createConversationsForFriends(UserRepository userRepository) {
         if (conversationRepository.count() > 0) {
-            log.info("ConversationService data already exists, skipping creation");
+            log.info("Conversation data already exists, skipping creation");
             return;
         }
 
@@ -181,44 +192,119 @@ public class AppInitConfig {
             return;
         }
 
+        // Get all friendships to determine who can chat with whom
+        List<Friend> allFriendships = friendRepository.findAll();
+        
         List<Conversation> conversations = new ArrayList<>();
         Map<Conversation, List<User>> conversationParticipants = new HashMap<>();
 
-        // Create private conversations between friends
-        User hung = users.get(0); // Hung
-
-        // Create private conversations for Hung with everyone
+        // Create private conversations only between friends
+        User hung = users.get(0); // Hung (index 0)
+        
+        // Create private conversations for Hung with friends
         for (int i = 1; i < 5; i++) {
-            Conversation privateConv = Conversation.builder()
-                    .title("")
-                    .type(Conversation.Type.PRIVATE)
-                    .build();
+            User otherUser = users.get(i);
+            // Check if they are friends
+            boolean areFriends = allFriendships.stream().anyMatch(f -> 
+                (f.getUserId1().equals(hung.getId()) && f.getUserId2().equals(otherUser.getId())) || 
+                (f.getUserId1().equals(otherUser.getId()) && f.getUserId2().equals(hung.getId()))
+            );
+            
+            if (areFriends) {
+                Conversation privateConv = Conversation.builder()
+                        .title("")
+                        .type(Conversation.Type.PRIVATE)
+                        .build();
 
-            conversations.add(privateConv);
-            conversationParticipants.put(privateConv, List.of(hung, users.get(i)));
+                conversations.add(privateConv);
+                conversationParticipants.put(privateConv, List.of(hung, otherUser));
+            }
         }
 
-        // Create a group conversation with everyone
-        Conversation groupConv = Conversation.builder()
-                .title("Nhóm bạn thân")
-                .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png")
-                .cloudinaryImageId("default_group_image_la4psw")
-                .type(Conversation.Type.GROUP)
-                .build();
+        // Create private conversations for other friends
+        for (int i = 1; i < users.size(); i++) {
+            for (int j = i + 1; j < users.size(); j++) {
+                User user1 = users.get(i);
+                User user2 = users.get(j);
+                
+                // Skip if either user is Hung (already handled above)
+                if (user1.equals(hung) || user2.equals(hung)) {
+                    continue;
+                }
+                
+                // Check if they are friends
+                boolean areFriends = allFriendships.stream().anyMatch(f -> 
+                    (f.getUserId1().equals(user1.getId()) && f.getUserId2().equals(user2.getId())) || 
+                    (f.getUserId1().equals(user2.getId()) && f.getUserId2().equals(user1.getId()))
+                );
+                
+                if (areFriends) {
+                    Conversation privateConv = Conversation.builder()
+                            .title("")
+                            .type(Conversation.Type.PRIVATE)
+                            .build();
 
-        conversations.add(groupConv);
-        conversationParticipants.put(groupConv, users);
+                    conversations.add(privateConv);
+                    conversationParticipants.put(privateConv, List.of(user1, user2));
+                }
+            }
+        }
 
-        // Create another group with Hung, Trang, Thuy
-        Conversation smallGroupConv = Conversation.builder()
-                .title("Bạn thân thiết")
-                .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png")
-                .cloudinaryImageId("default_group_image_la4psw")
-                .type(Conversation.Type.GROUP)
-                .build();
+        // Create a group conversation with Hung and his friends
+        List<User> hungFriends = users.stream()
+            .filter(user -> !user.equals(hung) && allFriendships.stream().anyMatch(f -> 
+                (f.getUserId1().equals(hung.getId()) && f.getUserId2().equals(user.getId())) || 
+                (f.getUserId1().equals(user.getId()) && f.getUserId2().equals(hung.getId()))
+            ))
+            .toList();
+            
+        if (!hungFriends.isEmpty()) {
+            List<User> hungGroup = new ArrayList<>();
+            hungGroup.add(hung);
+            hungGroup.addAll(hungFriends);
+            
+            Conversation groupConv = Conversation.builder()
+                    .title("Nhóm bạn thân")
+                    .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png")
+                    .cloudinaryImageId("default_group_image_la4psw")
+                    .type(Conversation.Type.GROUP)
+                    .build();
 
-        conversations.add(smallGroupConv);
-        conversationParticipants.put(smallGroupConv, List.of(users.get(0), users.get(1), users.get(2)));
+            conversations.add(groupConv);
+            conversationParticipants.put(groupConv, hungGroup);
+        }
+
+        // Create another group with friends Trang, Thuy, Vinh if they are all friends
+        User trang = users.get(1);
+        User thuy = users.get(2);
+        User vinh = users.get(3);
+        
+        boolean trangThuyFriends = allFriendships.stream().anyMatch(f -> 
+            (f.getUserId1().equals(trang.getId()) && f.getUserId2().equals(thuy.getId())) || 
+            (f.getUserId1().equals(thuy.getId()) && f.getUserId2().equals(trang.getId()))
+        );
+        
+        boolean trangVinhFriends = allFriendships.stream().anyMatch(f -> 
+            (f.getUserId1().equals(trang.getId()) && f.getUserId2().equals(vinh.getId())) || 
+            (f.getUserId1().equals(vinh.getId()) && f.getUserId2().equals(trang.getId()))
+        );
+        
+        boolean thuyVinhFriends = allFriendships.stream().anyMatch(f -> 
+            (f.getUserId1().equals(thuy.getId()) && f.getUserId2().equals(vinh.getId())) || 
+            (f.getUserId1().equals(vinh.getId()) && f.getUserId2().equals(thuy.getId()))
+        );
+        
+        if (trangThuyFriends && trangVinhFriends && thuyVinhFriends) {
+            Conversation smallGroupConv = Conversation.builder()
+                    .title("Bạn thân thiết")
+                    .imageUrl("https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png")
+                    .cloudinaryImageId("default_group_image_la4psw")
+                    .type(Conversation.Type.GROUP)
+                    .build();
+
+            conversations.add(smallGroupConv);
+            conversationParticipants.put(smallGroupConv, List.of(trang, thuy, vinh));
+        }
 
         // Save conversations first
         conversationRepository.saveAll(conversations);

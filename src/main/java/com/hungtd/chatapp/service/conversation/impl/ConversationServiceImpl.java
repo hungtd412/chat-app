@@ -86,7 +86,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
     
     @Override
-    public ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId) {
+    public ConversationResponse enrichConversation(Conversation conversation, Long currentUserId) {
         ConversationResponse response = conversationMapper.toConversationResponse(conversation);
         
         // For private conversations, find the other participant and add their name

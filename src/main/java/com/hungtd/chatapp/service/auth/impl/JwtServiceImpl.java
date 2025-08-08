@@ -57,7 +57,7 @@ public class JwtServiceImpl implements JwtService {
     private String generateJwtToken(User user, String tokenType, long amount, ChronoUnit unit) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
+                .subject(String.valueOf(user.getId()))
                 .issuer("hung")
                 .issueTime(new Date())
                 .expirationTime(new Date(

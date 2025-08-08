@@ -80,15 +80,15 @@ public class UserServiceImpl implements UserService {
     @Override
     public User currentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        String userId = authentication.getName();
 
-        return userRepository.findByUsername(username)
+        return userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
     }
 
     @Override
-    @PostAuthorize("returnObject.getUsername() == authentication.getName() or hasRole(\"ADMIN\")")
+    @PostAuthorize("returnObject.getId().toString() == authentication.getName() or hasRole(\"ADMIN\")")
     public User get(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)

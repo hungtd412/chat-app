@@ -17,7 +17,14 @@ public interface ConversationService {
 
     List<Conversation> getCurrentUserConversations();
 
-    ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId);
+    /**
+     *
+     * @param conversation
+     * @param currentUserId
+     * @return a list of conversations, each conversation has their friend avt, friend name
+     * and latest message
+     */
+    ConversationResponse enrichConversation(Conversation conversation, Long currentUserId);
 
     Conversation updateGroupTitle(Long conversationId, UpdateGroupTitleRequest updateGroupTitleRequest);
 

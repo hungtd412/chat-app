@@ -34,7 +34,7 @@ public class ConversationController {
         User currentUser = userService.currentUser();
         
         List<ConversationResponse> conversationResponses = conversations.stream()
-                .map(conversation -> conversationService.enrichConversationWithFriendNameAngImage(conversation, currentUser.getId()))
+                .map(conversation -> conversationService.enrichConversation(conversation, currentUser.getId()))
                 .toList();
                 
         return ResponseEntity.ok(

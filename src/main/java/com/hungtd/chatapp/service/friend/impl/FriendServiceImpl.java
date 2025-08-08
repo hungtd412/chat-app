@@ -58,8 +58,8 @@ public class FriendServiceImpl implements FriendService {
     @Override
     @Transactional
     public FriendRequestResponse sendFriendRequest(FriendRequestRequest friendRequestRequest) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User sender = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User sender = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         User receiver = userRepository.findById(friendRequestRequest.getReceiverId())
@@ -135,8 +135,8 @@ public class FriendServiceImpl implements FriendService {
 
     @Override
     public List<FriendRequestResponse> getPendingRequests() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         List<FriendRequest> pendingRequests = friendRequestRepository
@@ -149,8 +149,8 @@ public class FriendServiceImpl implements FriendService {
 
     @Override
     public List<FriendRequestResponse> getSentRequests() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         List<FriendRequest> sentRequests = friendRequestRepository.findBySender_Id(currentUser.getId());

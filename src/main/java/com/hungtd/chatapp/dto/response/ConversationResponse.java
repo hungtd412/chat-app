@@ -18,4 +18,5 @@ public class ConversationResponse {
     private Conversation.Type type;
     private String friendName;
     private String imageUrl;
+    private String latestMessage;
 }

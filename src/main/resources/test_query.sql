@@ -24,6 +24,6 @@ FROM (select id, image_url, title, type from conversations) c
                    ON m.conversation_id = c.id AND m.rn = 1 /*first row of each message partition*/
 ORDER BY COALESCE(m.id, 0) DESC;
 
-
+desc messages;
 
 

@@ -4,6 +4,7 @@ import com.hungtd.chatapp.entity.Conversation;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Getter
@@ -15,9 +16,9 @@ public class ConversationProjection {
     Long id;
     String title;
     String image_url;
-    Conversation.Type type;
+    String type;
     String friend_name;
     String avt_url;
     String latest_message;
-    LocalDateTime created_at;
+    Timestamp created_at;
 }

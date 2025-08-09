@@ -25,6 +25,7 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             "       p2.avt_url,\n" +
             "       m.message as latest_message,\n" +
             "       m.created_at\n" +
+
             "FROM (select id, image_url, title, type from conversations) c\n" +
             "         JOIN (select conversation_id, user_id from participants) p\n" +
             "              ON p.conversation_id = c.id AND p.user_id = 2\n" +

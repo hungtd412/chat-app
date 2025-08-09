@@ -5,6 +5,7 @@ import com.hungtd.chatapp.entity.Conversation;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @Data
@@ -16,10 +17,10 @@ import java.time.LocalDateTime;
 public class ConversationResponse {
     Long id;
     String title;
-    Conversation.Type type;
+    String type;
     String imageUrl;
     String friendName;
     String avtUrl;
     String latestMessage;
-    LocalDateTime createdAt;
+    Timestamp createdAt;
 }

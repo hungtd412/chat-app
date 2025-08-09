@@ -35,9 +35,9 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> getMessagesByConversationId(Long conversationId) {
-        if (!conversationService.isExistById(conversationId)) {
-            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
-        }
+//        if (!conversationService.isExistById(conversationId)) {
+//            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
+//        }
 
         conversationService.validateUserInConversation(conversationId, userService.currentUser().getId());
 

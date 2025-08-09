@@ -88,6 +88,12 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return Long.parseLong(authentication.getName());
+    }
+
+    @Override
     @PostAuthorize("returnObject.getId().toString() == authentication.getName() or hasRole(\"ADMIN\")")
     public User get(Long id) {
         return userRepository.findById(id)

@@ -79,16 +79,18 @@ $(document).ready(function() {
         alert('New conversation feature coming soon!');
     });
 
-    // Send message button click handler
+    // Send message button click handler - use the shared function from chat-utils.js
     $(document).on('click', '#send-message-btn', function() {
         const conversationId = $(this).data('conversation-id');
+        // Use the shared function from chat-utils.js
         sendMessage(conversationId, stompClient);
     });
 
-    // Send message on Enter key
+    // Send message on Enter key - use the shared function from chat-utils.js
     $(document).on('keypress', '#message-input', function(e) {
         if (e.which === 13) { // Enter key
             const conversationId = $('#send-message-btn').data('conversation-id');
+            // Use the shared function from chat-utils.js
             sendMessage(conversationId, stompClient);
         }
     });
@@ -265,39 +267,7 @@ function displayConversations(conversations) {
     }
 }
 
-function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
-    const messageInput = $(`#${messageInputId}`);
-    const messageText = messageInput.val().trim();
-
-    if (!messageText) return;
-
-    // Clear input before sending to make UI more responsive
-    messageInput.val('');
-
-    // Check if we can use WebSocket
-    if (stompClient && stompClient.connected) {
-        console.log('Sending message via WebSocket');
-        const message = {
-            conversationId: conversationId,
-            type: 'TEXT',
-            content: messageText
-        };
-
-        // Add authorization headers when sending the message
-        const headers = {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        };
-
-        // Move the conversation to the top when sending a message too
-        moveConversationToTop(conversationId);
-
-        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
-    } else {
-        console.error('WebSocket not connected, cannot send message');
-        alert('Connection error. Please refresh the page and try again.');
-        messageInput.val(messageText); // Restore the message text
-    }
-}
+// Remove duplicate sendMessage function - it's now in chat-utils.js
 
 function handleLogout() {
     console.log("Logout button clicked");

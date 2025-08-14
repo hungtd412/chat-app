@@ -248,12 +248,18 @@ function loadMessages(conversationId, messagesListId = 'messages-list') {
     });
 }
 
-// WebSocket Functions
+/**
+ * Sends a message via WebSocket
+ * @param {number} conversationId - The ID of the conversation to send the message to
+ * @param {object} stompClient - The STOMP client instance
+ * @param {string} messageInputId - The ID of the message input element
+ * @returns {boolean} Whether the message was sent successfully
+ */
 function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
     const messageInput = $(`#${messageInputId}`);
     const messageText = messageInput.val().trim();
 
-    if (!messageText) return;
+    if (!messageText) return false;
 
     // Clear input before sending to make UI more responsive
     messageInput.val('');
@@ -272,11 +278,30 @@ function sendMessage(conversationId, stompClient, messageInputId = 'message-inpu
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         };
 
+        // Move the conversation to the top when sending a message
+        if (typeof window.moveConversationToTop === 'function') {
+            window.moveConversationToTop(conversationId);
+        }
+        
+        // Also update the latest message preview in the conversation list
+        // with a truncated version if it's too long
+        const previewText = messageText.length > 30 
+            ? messageText.substring(0, 30) + '...' 
+            : messageText;
+            
+        // Use current timestamp for immediate feedback
+        const now = new Date().toISOString();
+        if (typeof window.updateLatestMessage === 'function') {
+            window.updateLatestMessage(conversationId, previewText, now);
+        }
+
         stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+        return true;
     } else {
         console.error('WebSocket not connected, cannot send message');
         alert('Connection error. Please refresh the page and try again.');
         messageInput.val(messageText); // Restore the message text
+        return false;
     }
 }
 
@@ -354,5 +379,6 @@ function updateLatestMessage(conversationId, message, timestamp) {
     }
 }
 
-// Make this function available globally
+// Make functions available globally
+window.sendMessage = sendMessage;
 window.updateLatestMessage = updateLatestMessage;

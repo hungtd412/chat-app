@@ -1,50 +1,41 @@
 {
-  "data" : {
-    "content" : [ {
-      "id" : 6,
-      "friendName" : "Nam Hoàng",
-      "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-      "conversationId" : 4
-    }, {
-      "id" : 4,
-      "friendName" : "Thủy Nguyễn",
-      "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-      "conversationId" : 2
-    }, {
-      "id" : 3,
-      "friendName" : "Trang Trần",
-      "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-      "conversationId" : 1
-    }, {
-      "id" : 5,
-      "friendName" : "Vinh Trần",
-      "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-      "conversationId" : 3
-    } ],
-    "pageable" : {
-      "pageNumber" : 0,
-      "pageSize" : 10,
-      "sort" : {
-        "empty" : false,
-        "sorted" : true,
-        "unsorted" : false
-      },
-      "offset" : 0,
-      "unpaged" : false,
-      "paged" : true
-    },
-    "last" : true,
-    "totalPages" : 1,
-    "totalElements" : 4,
-    "first" : true,
-    "size" : 10,
-    "number" : 0,
-    "sort" : {
-      "empty" : false,
-      "sorted" : true,
-      "unsorted" : false
-    },
-    "numberOfElements" : 4,
-    "empty" : false
-  }
+  "data" : [ {
+    "id" : 8,
+    "title" : "Nhóm bạn thân",
+    "type" : "GROUP",
+    "imageUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png",
+    "latestMessage" : "a",
+    "createdAt" : "2025-08-07T14:28:41.287+00:00"
+  }, {
+    "id" : 1,
+    "title" : "",
+    "type" : "PRIVATE",
+    "friendName" : "Hùng Trần",
+    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "latestMessage" : "asas",
+    "createdAt" : "2025-08-07T14:27:53.664+00:00"
+  }, {
+    "id" : 6,
+    "title" : "",
+    "type" : "PRIVATE",
+    "friendName" : "Vinh Trần",
+    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "latestMessage" : "Mình đang làm việc trên dự án này.",
+    "createdAt" : "2025-07-26T05:21:38.274+00:00"
+  }, {
+    "id" : 9,
+    "title" : "Bạn thân thiết",
+    "type" : "GROUP",
+    "imageUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png",
+    "latestMessage" : "Mình khỏe, cảm ơn vì đã hỏi thăm!",
+    "createdAt" : "2025-07-26T05:21:38.208+00:00"
+  }, {
+    "id" : 5,
+    "title" : "",
+    "type" : "PRIVATE",
+    "friendName" : "Thủy Nguyễn",
+    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "latestMessage" : "Tuần sau mình đi nghỉ mát.",
+    "createdAt" : "2025-07-26T05:21:38.183+00:00"
+  } ]
 }

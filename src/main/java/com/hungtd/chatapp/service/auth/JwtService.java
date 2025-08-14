@@ -11,7 +11,7 @@ public interface JwtService {
     SignedJWT verifyRefreshToken(String token);
     Long getTokenExpirationTime(String token);
     String buildScope(User user);
-    String extractUsernameByTokenStompHeader(StompHeaderAccessor headerAccessor);
+    Long extractUserIdByTokenStompHeader(StompHeaderAccessor headerAccessor);
     String extractTokenFromStompHeader(StompHeaderAccessor headerAccessor);
-    String extractUsernameFromToken(String token);
+    String extractUserIdFromToken(String token);
 }

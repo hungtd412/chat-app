@@ -35,9 +35,9 @@ public class MessageServiceImpl implements MessageService {
 
     @Override
     public List<Message> getMessagesByConversationId(Long conversationId) {
-        if (!conversationService.isExistById(conversationId)) {
-            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
-        }
+//        if (!conversationService.isExistById(conversationId)) {
+//            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
+//        }
 
         conversationService.validateUserInConversation(conversationId, userService.currentUser().getId());
 
@@ -86,8 +86,8 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private User getUserFromStompHeader(StompHeaderAccessor headerAccessor) {
-        String username = webSocketService.extractUsernameFromHeader(headerAccessor);
+        Long userId = webSocketService.extractUserIdFromHeader(headerAccessor);
 
-        return userService.findByUsername(username);
+        return userService.get(userId);
     }
 }

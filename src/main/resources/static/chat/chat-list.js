@@ -102,15 +102,26 @@ function renderConversations(conversations) {
         const avatarClass = isGroup ? 'avatar group-avatar' : 'avatar';
 
         // Check if imageUrl exists for displaying avatar image
-        const hasAvatarUrl = conversation.imageUrl && conversation.imageUrl.trim() !== '';
+        const hasAvatarUrl = (isGroup ? conversation.imageUrl : conversation.avtUrl) &&
+            (isGroup ? conversation.imageUrl.trim() !== '' : conversation.avtUrl.trim() !== '');
 
         // Create avatar content based on whether an image URL is available
         let avatarContent = '';
         if (hasAvatarUrl) {
-            avatarContent = `<img src="${conversation.imageUrl}" alt="${displayName}" class="avatar-img">`;
+            const imageUrl = isGroup ? conversation.imageUrl : conversation.avtUrl;
+            avatarContent = `<img src="${imageUrl}" alt="${displayName}" class="avatar-img">`;
         } else {
             avatarContent = getAvatarInitial(displayName);
         }
+
+        // Format the timestamp
+        let formattedTime = '';
+        if (conversation.createdAt) {
+            formattedTime = formatTimestamp(conversation.createdAt);
+        }
+
+        // Prepare the latest message text
+        const latestMessage = conversation.latestMessage || 'No messages yet';
 
         const conversationItem = `
             <div class="conversation-item" data-id="${conversation.id}" data-type="${conversation.type}">
@@ -119,6 +130,10 @@ function renderConversations(conversations) {
                 </div>
                 <div class="conversation-info">
                     <div class="conversation-name">${displayName}</div>
+                    <div class="conversation-meta">
+                        <div class="latest-message">${latestMessage}</div>
+                        <div class="message-time">${formattedTime}</div>
+                    </div>
                 </div>
             </div>
         `;
@@ -128,6 +143,51 @@ function renderConversations(conversations) {
 
     // Check if there are any stored unread counts to restore
     restoreUnreadCounts();
+}
+
+/**
+ * Formats a timestamp into a readable format
+ * @param {string} timestamp - The timestamp to format
+ * @returns {string} The formatted timestamp
+ */
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    // Check if valid date
+    if (isNaN(date.getTime())) return '';
+
+    // Today
+    if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+    }
+
+    // This week (within 7 days)
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+    if (date > oneWeekAgo) {
+        const options = { weekday: 'short' };
+        return date.toLocaleDateString([], options);
+    }
+
+    // This year
+    if (date.getFullYear() === now.getFullYear()) {
+        const options = { month: 'short', day: 'numeric' };
+        return date.toLocaleDateString([], options);
+    }
+
+    // Older
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString([], options);
 }
 
 /**

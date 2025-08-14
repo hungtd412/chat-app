@@ -133,13 +133,13 @@ function connectToWebSocket() {
     stompClient.connect(headers, function(frame) {
         console.log('Connected to WebSocket');
 
-        // Get username from token
-        const username = getUsernameFromToken(token);
+        // Get userId from token
+        const userId = getUserIdFromToken(token);
 
-        if (username) {
-            // Subscribe to personal queue for private messages using username
-            stompClient.subscribe(`/user11/${username}/queue/messages`, onMessageReceived);
-            console.log(`Subscribed to /user/${username}/queue/messages`);
+        if (userId) {
+            // Subscribe to personal queue for private messages using userId
+            stompClient.subscribe(`/user11/${userId}/queue/messages`, onMessageReceived);
+            console.log(`Subscribed to /user11/${userId}/queue/messages`);
 
         }
     }, function(error) {
@@ -158,6 +158,16 @@ function onMessageReceived(payload) {
 
         // Move conversation to top regardless of whether it's active or not
         moveConversationToTop(conversationId);
+        
+        // Update the latest message in the conversation list
+        if (message.content) {
+            // Truncate message if it's too long for preview
+            const previewText = message.content.length > 30 
+                ? message.content.substring(0, 30) + '...' 
+                : message.content;
+            
+            updateLatestMessage(conversationId, previewText, message.createdAt);
+        }
 
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');

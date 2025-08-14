@@ -85,7 +85,7 @@ public class ConversationServiceImpl implements ConversationService {
         Long currentUserId = userService.getCurrentUserId();
 
 
-        return conversationRepository.findAllByUserIdOrderByNewestMessage(currentUserId, ConversationProjection.class)
+        return conversationRepository.findAllByUserIdOrderByNewestMessage(currentUserId)
                 .stream()
                 .map(conversationMapper::toConversationResponse)
                 .toList();

@@ -148,16 +148,16 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String extractUsernameByTokenStompHeader(StompHeaderAccessor headerAccessor) {
+    public Long extractUserIdByTokenStompHeader(StompHeaderAccessor headerAccessor) {
         String token = extractTokenFromStompHeader(headerAccessor);
 
-        String username = extractUsernameFromToken(token);
+        String userId = extractUserIdFromToken(token);
 
-        if (Objects.equals(username, null)) {
+        if (Objects.equals(userId, null)) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        return username;
+        return Long.parseLong(userId);
     }
 
     public String extractTokenFromStompHeader(StompHeaderAccessor headerAccessor) {
@@ -169,7 +169,7 @@ public class JwtServiceImpl implements JwtService {
         }
     }
 
-    public String extractUsernameFromToken(String token) {
+    public String extractUserIdFromToken(String token) {
         try {
             String[] splitToken = token.split("\\.");
             if (splitToken.length != 3) {
@@ -186,7 +186,7 @@ public class JwtServiceImpl implements JwtService {
 
             return null;
         } catch (Exception e) {
-            log.error("Error extracting username from token", e);
+            log.error("Error extracting userId from token", e);
             return null;
         }
     }

@@ -4,7 +4,7 @@
  */
 
 // WebSocket Functions
-function getUsernameFromToken(token) {
+function getUserIdFromToken(token) {
     if (!token) return null;
 
     try {
@@ -16,9 +16,9 @@ function getUsernameFromToken(token) {
 
         // The second part contains the payload
         const payload = JSON.parse(atob(tokenParts[1]));
-        return payload.sub; // returning the username (subject)
+        return payload.sub; // returning the userId (subject)
     } catch (e) {
-        console.error('Error extracting username from token', e);
+        console.error('Error extracting userId from token', e);
         return null;
     }
 }

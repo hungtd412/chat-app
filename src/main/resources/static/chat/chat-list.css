@@ -106,6 +106,28 @@
     text-overflow: ellipsis;
 }
 
+.latest-message {
+    font-size: 13px;
+    color: #777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    margin-bottom: 2px;
+}
+
+.conversation-meta {
+    display: flex;
+    justify-content: space-between;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #999;
+    white-space: nowrap;
+    margin-left: 5px;
+}
+
 .unread-badge {
     background-color: #f44336;
     color: white;

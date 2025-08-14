@@ -25,20 +25,18 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             "       p2.avt_url,\n" +
             "       m.message as latest_message,\n" +
             "       m.created_at\n" +
-
             "FROM (select id, image_url, title, type from conversations) c\n" +
             "         JOIN (select conversation_id, user_id from participants) p\n" +
-            "              ON p.conversation_id = c.id AND p.user_id = 2\n" +
+            "              ON p.conversation_id = c.id AND p.user_id = :userId\n" +
             "         LEFT JOIN (select user_id, avt_url, conversation_id,\n" +
             "                      CONCAT(first_name, ' ', last_name) as friend_name\n" +
             "               from participants\n" +
             "                        join users on participants.user_id = users.id) p2\n" +
-            "              ON p2.conversation_id = c.id AND p2.user_id <> 2 AND type = 'PRIVATE'\n" +
+            "              ON p2.conversation_id = c.id AND p2.user_id <> :userId AND type = 'PRIVATE'\n" +
             "         LEFT JOIN msgs m\n" +
             "                   ON m.conversation_id = c.id AND m.rn = 1 /*first row of each message partition*/\n" +
             "ORDER BY COALESCE(m.id, 0) DESC")
-    <T> List<T> findAllByUserIdOrderByNewestMessage(
-            @Param("userId") Long userId,
-            Class<T> type
+    List<ConversationProjection> findAllByUserIdOrderByNewestMessage(
+            @Param("userId") Long userId
     );
 }

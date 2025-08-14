@@ -36,8 +36,8 @@ public class WebSocketServiceImpl implements WebSocketService {
     UserRepository userRepository;
 
     @Override
-    public String extractUsernameFromHeader(StompHeaderAccessor headerAccessor) {
-        return jwtService.extractUsernameByTokenStompHeader(headerAccessor);
+    public Long extractUserIdFromHeader(StompHeaderAccessor headerAccessor) {
+        return jwtService.extractUserIdByTokenStompHeader(headerAccessor);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class WebSocketServiceImpl implements WebSocketService {
         try {
             // Send to the sender for confirmation
             messagingTemplate.convertAndSendToUser(
-                    currentUser.getUsername(),
+                    currentUser.getId().toString(),
                     "/queue/messages",
                     senderMessage
             );
@@ -73,7 +73,7 @@ public class WebSocketServiceImpl implements WebSocketService {
             // Send to all receivers
             for (User user : receivers) {
                 messagingTemplate.convertAndSendToUser(
-                        user.getUsername(),
+                        user.getId().toString(),
                         "/queue/messages",
                         receiverMessage
                 );

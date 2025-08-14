@@ -86,8 +86,8 @@ public class MessageServiceImpl implements MessageService {
     }
 
     private User getUserFromStompHeader(StompHeaderAccessor headerAccessor) {
-        String username = webSocketService.extractUsernameFromHeader(headerAccessor);
+        Long userId = webSocketService.extractUserIdFromHeader(headerAccessor);
 
-        return userService.findByUsername(username);
+        return userService.get(userId);
     }
 }

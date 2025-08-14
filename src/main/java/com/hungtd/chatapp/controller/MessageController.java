@@ -14,6 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,7 +50,7 @@ public class MessageController {
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload @Valid CreateMessageRequest createMessageRequest, StompHeaderAccessor headerAccessor) {
         log.debug("Handling chat message for conversation: {}", createMessageRequest.getConversationId());
-        
+        Authentication name = SecurityContextHolder.getContext().getAuthentication();
         messageService.processChatMessage(createMessageRequest, headerAccessor);
     }
 }

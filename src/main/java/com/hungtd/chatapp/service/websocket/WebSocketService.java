@@ -15,7 +15,7 @@ public interface WebSocketService {
      * @param headerAccessor STOMP header accessor containing authentication information
      * @return the extracted username
      */
-    String extractUsernameFromHeader(StompHeaderAccessor headerAccessor);
+    Long extractUserIdFromHeader(StompHeaderAccessor headerAccessor);
     
     /**
      * Sends WebSocket messages based on conversation type

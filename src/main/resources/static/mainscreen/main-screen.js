@@ -133,13 +133,13 @@ function connectToWebSocket() {
     stompClient.connect(headers, function(frame) {
         console.log('Connected to WebSocket');
 
-        // Get username from token
-        const username = getUsernameFromToken(token);
+        // Get userId from token
+        const userId = getUserIdFromToken(token);
 
-        if (username) {
-            // Subscribe to personal queue for private messages using username
-            stompClient.subscribe(`/user11/${username}/queue/messages`, onMessageReceived);
-            console.log(`Subscribed to /user/${username}/queue/messages`);
+        if (userId) {
+            // Subscribe to personal queue for private messages using userId
+            stompClient.subscribe(`/user11/${userId}/queue/messages`, onMessageReceived);
+            console.log(`Subscribed to /user11/${userId}/queue/messages`);
 
         }
     }, function(error) {

@@ -36,4 +36,4 @@ build/
 env.properties
 
 ## Tasks order
-to-do-list.txt
+src/main/resources/to-do-list.txt

@@ -2,6 +2,7 @@ package com.hungtd.chatapp.service.friend.impl;
 
 import com.hungtd.chatapp.dto.request.FriendRequestRequest;
 import com.hungtd.chatapp.dto.response.FriendRequestResponse;
+import com.hungtd.chatapp.dto.response.UserNameAndAvatarResponse;
 import com.hungtd.chatapp.entity.Conversation;
 import com.hungtd.chatapp.entity.Friend;
 import com.hungtd.chatapp.entity.FriendRequest;
@@ -14,16 +15,16 @@ import com.hungtd.chatapp.repository.FriendRepository;
 import com.hungtd.chatapp.repository.FriendRequestRepository;
 import com.hungtd.chatapp.repository.UserRepository;
 import com.hungtd.chatapp.service.conversation.ConversationService;
-import com.hungtd.chatapp.service.friend.FriendRequestService;
+import com.hungtd.chatapp.service.friend.FriendService;
 import com.hungtd.chatapp.service.user.UserService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.data.domain.*;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -32,20 +33,33 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class FriendRequestServiceImpl implements FriendRequestService {
+public class FriendServiceImpl implements FriendService {
 
     FriendRequestRepository friendRequestRepository;
     UserRepository userRepository;
     FriendRequestMapper friendRequestMapper;
     FriendRepository friendRepository;
+
     ConversationService conversationService;
     UserService userService;
 
     @Override
+    public Page<UserNameAndAvatarResponse> getAllFriends(int page, int size) {
+        User currentUser = userService.currentUser();
+        Long userId = currentUser.getId();
+
+        // Don't specify a sort property since the sorting is handled in the JPQL query
+        Pageable pageable = PageRequest.of(page, size, Sort.by("friendName"));
+
+        // Get paginated friends with details directly from database
+        return friendRepository.findFriendsWithDetailsPaged(userId, pageable);
+    }
+
+    @Override
     @Transactional
     public FriendRequestResponse sendFriendRequest(FriendRequestRequest friendRequestRequest) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User sender = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User sender = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         User receiver = userRepository.findById(friendRequestRequest.getReceiverId())
@@ -121,8 +135,8 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
     @Override
     public List<FriendRequestResponse> getPendingRequests() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         List<FriendRequest> pendingRequests = friendRequestRepository
@@ -135,8 +149,8 @@ public class FriendRequestServiceImpl implements FriendRequestService {
 
     @Override
     public List<FriendRequestResponse> getSentRequests() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User currentUser = userRepository.findByUsername(username)
+        String userId = SecurityContextHolder.getContext().getAuthentication().getName();
+        User currentUser = userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
         
         List<FriendRequest> sentRequests = friendRequestRepository.findBySender_Id(currentUser.getId());

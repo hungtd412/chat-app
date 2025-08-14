@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -80,15 +81,21 @@ public class UserServiceImpl implements UserService {
     @Override
     public User currentUser() {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+        String userId = authentication.getName();
 
-        return userRepository.findByUsername(username)
+        return userRepository.findById(Long.parseLong(userId))
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)
                 );
     }
 
     @Override
-    @PostAuthorize("returnObject.getUsername() == authentication.getName() or hasRole(\"ADMIN\")")
+    public Long getCurrentUserId() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        return Long.parseLong(authentication.getName());
+    }
+
+    @Override
+//    @PostAuthorize("returnObject.getId().toString() == authentication.getName() or hasRole(\"ADMIN\")")
     public User get(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED)

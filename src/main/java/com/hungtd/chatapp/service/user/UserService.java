@@ -18,6 +18,8 @@ public interface UserService {
 
     User currentUser();
 
+    Long getCurrentUserId();
+
     User get(Long id);
 
     User getUserWithNameAndAvt(Long id);

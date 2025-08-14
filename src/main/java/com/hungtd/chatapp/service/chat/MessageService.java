@@ -1,6 +1,6 @@
 package com.hungtd.chatapp.service.chat;
 
-import com.hungtd.chatapp.dto.request.MessageRequest;
+import com.hungtd.chatapp.dto.request.CreateMessageRequest;
 import com.hungtd.chatapp.dto.response.MessageResponse;
 import com.hungtd.chatapp.entity.Message;
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor;
@@ -21,8 +21,8 @@ public interface MessageService {
     /**
      * Processes and sends a chat message
      * 
-     * @param messageRequest the message request containing the message details
+     * @param createMessageRequest the message request containing the message details
      * @param headerAccessor the STOMP header accessor containing authentication information
      */
-    void processChatMessage(MessageRequest messageRequest, StompHeaderAccessor headerAccessor);
+    void processChatMessage(CreateMessageRequest createMessageRequest, StompHeaderAccessor headerAccessor);
 }

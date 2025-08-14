@@ -12,6 +12,7 @@ import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.ConversationMapper;
+import com.hungtd.chatapp.projection.ConversationProjection;
 import com.hungtd.chatapp.repository.ConversationRepository;
 import com.hungtd.chatapp.repository.ParticipantRepository;
 import com.hungtd.chatapp.repository.UserRepository;
@@ -81,13 +82,18 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public List<Conversation> getCurrentUserConversations() {
-        User currentUser = userService.currentUser();
-        return conversationRepository.findAllByUserIdOrderByNewestMessage(currentUser.getId());
+    public List<ConversationResponse> getCurrentUserConversations() {
+        Long currentUserId = userService.getCurrentUserId();
+
+
+        return conversationRepository.findAllByUserIdOrderByNewestMessage(currentUserId)
+                .stream()
+                .map(conversationMapper::toConversationResponse)
+                .toList();
     }
     
     @Override
-    public ConversationResponse enrichConversationWithFriendNameAngImage(Conversation conversation, Long currentUserId) {
+    public ConversationResponse enrichConversation(Conversation conversation, Long currentUserId) {
         ConversationResponse response = conversationMapper.toConversationResponse(conversation);
         
         // For private conversations, find the other participant and add their name

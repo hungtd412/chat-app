@@ -4,6 +4,7 @@ import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.service.auth.JwtService;
+import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -41,9 +42,10 @@ public class JwtServiceImpl implements JwtService {
     private static final String ACCESS_TOKEN = "access";
     private static final String REFRESH_TOKEN = "refresh";
 
-    TokenBlacklistServiceImpl tokenBlacklistServiceImpl;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // Generate an access token with short expiration (1 hour)
+    @Override
     public String generateAccessToken(User user) {
         return generateJwtToken(user, ACCESS_TOKEN, 1, ChronoUnit.HOURS);
     }
@@ -57,7 +59,7 @@ public class JwtServiceImpl implements JwtService {
     private String generateJwtToken(User user, String tokenType, long amount, ChronoUnit unit) {
         JWSHeader jwsHeader = new JWSHeader(JWSAlgorithm.HS512);
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getUsername())
+                .subject(String.valueOf(user.getId()))
                 .issuer("hung")
                 .issueTime(new Date())
                 .expirationTime(new Date(
@@ -92,7 +94,7 @@ public class JwtServiceImpl implements JwtService {
                 throw new AppException(ErrorCode.INVALID_KEY);
             }
 
-            if (tokenBlacklistServiceImpl.isBlacklisted(token)) {
+            if (tokenBlacklistService.isBlacklisted(token)) {
                 throw new AppException(ErrorCode.UNAUTHENTICATED);
             }
 
@@ -148,16 +150,16 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String extractUsernameByTokenStompHeader(StompHeaderAccessor headerAccessor) {
+    public Long extractUserIdByTokenStompHeader(StompHeaderAccessor headerAccessor) {
         String token = extractTokenFromStompHeader(headerAccessor);
 
-        String username = extractUsernameFromToken(token);
+        String userId = extractUserIdFromToken(token);
 
-        if (Objects.equals(username, null)) {
+        if (Objects.equals(userId, null)) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
 
-        return username;
+        return Long.parseLong(userId);
     }
 
     public String extractTokenFromStompHeader(StompHeaderAccessor headerAccessor) {
@@ -169,7 +171,7 @@ public class JwtServiceImpl implements JwtService {
         }
     }
 
-    public String extractUsernameFromToken(String token) {
+    public String extractUserIdFromToken(String token) {
         try {
             String[] splitToken = token.split("\\.");
             if (splitToken.length != 3) {
@@ -186,7 +188,7 @@ public class JwtServiceImpl implements JwtService {
 
             return null;
         } catch (Exception e) {
-            log.error("Error extracting username from token", e);
+            log.error("Error extracting userId from token", e);
             return null;
         }
     }

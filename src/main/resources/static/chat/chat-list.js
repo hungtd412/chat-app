@@ -4,7 +4,7 @@ if (window.location.pathname.includes('chat-list.html')) {
     $(document).ready(function() {
         // Check if user is logged in by verifying token in localStorage
         const token = localStorage.getItem('access_token');
-        const refreshToken = localStorage.getItem('refresh_token'); 
+        const refreshToken = localStorage.getItem('refresh_token');
         if (!token || !refreshToken) {
             window.location.href = '../signin/signin.html';
             return;
@@ -12,18 +12,6 @@ if (window.location.pathname.includes('chat-list.html')) {
 
         loadConversations();
 
-        // Click handler for conversation selection in standalone mode
-        $(document).on('click', '.conversation-item', function() {
-            $('.conversation-item').removeClass('active');
-            $(this).addClass('active');
-
-            const conversationId = $(this).data('id');
-            const isPrivate = $(this).data('type') === 'PRIVATE';
-
-            // Navigate to main-screen with the selected conversation
-            window.location.href = `../mainscreen/main-screen.html?id=${conversationId}&type=${isPrivate ? 'PRIVATE' : 'GROUP'}`;
-        });
-        
         // Add logout button for standalone mode only
         $('.sidebar').append(`
             <div class="sidebar-footer">
@@ -33,7 +21,7 @@ if (window.location.pathname.includes('chat-list.html')) {
                 </button>
             </div>
         `);
-        
+
         // Logout button handler for standalone mode
         $(document).on('click', '#standalone-logout-button', function() {
             // Call the logout function in parent window if it exists
@@ -114,15 +102,26 @@ function renderConversations(conversations) {
         const avatarClass = isGroup ? 'avatar group-avatar' : 'avatar';
 
         // Check if imageUrl exists for displaying avatar image
-        const hasAvatarUrl = conversation.imageUrl && conversation.imageUrl.trim() !== '';
+        const hasAvatarUrl = (isGroup ? conversation.imageUrl : conversation.avtUrl) &&
+            (isGroup ? conversation.imageUrl.trim() !== '' : conversation.avtUrl.trim() !== '');
 
         // Create avatar content based on whether an image URL is available
         let avatarContent = '';
         if (hasAvatarUrl) {
-            avatarContent = `<img src="${conversation.imageUrl}" alt="${displayName}" class="avatar-img">`;
+            const imageUrl = isGroup ? conversation.imageUrl : conversation.avtUrl;
+            avatarContent = `<img src="${imageUrl}" alt="${displayName}" class="avatar-img">`;
         } else {
             avatarContent = getAvatarInitial(displayName);
         }
+
+        // Format the timestamp
+        let formattedTime = '';
+        if (conversation.createdAt) {
+            formattedTime = formatTimestamp(conversation.createdAt);
+        }
+
+        // Prepare the latest message text
+        const latestMessage = conversation.latestMessage || 'No messages yet';
 
         const conversationItem = `
             <div class="conversation-item" data-id="${conversation.id}" data-type="${conversation.type}">
@@ -131,15 +130,64 @@ function renderConversations(conversations) {
                 </div>
                 <div class="conversation-info">
                     <div class="conversation-name">${displayName}</div>
+                    <div class="conversation-meta">
+                        <div class="latest-message">${latestMessage}</div>
+                        <div class="message-time">${formattedTime}</div>
+                    </div>
                 </div>
             </div>
         `;
 
         conversationList.append(conversationItem);
     });
-    
+
     // Check if there are any stored unread counts to restore
     restoreUnreadCounts();
+}
+
+/**
+ * Formats a timestamp into a readable format
+ * @param {string} timestamp - The timestamp to format
+ * @returns {string} The formatted timestamp
+ */
+function formatTimestamp(timestamp) {
+    if (!timestamp) return '';
+
+    const date = new Date(timestamp);
+    const now = new Date();
+
+    // Check if valid date
+    if (isNaN(date.getTime())) return '';
+
+    // Today
+    if (date.toDateString() === now.toDateString()) {
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    // Yesterday
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+        return 'Yesterday';
+    }
+
+    // This week (within 7 days)
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+    if (date > oneWeekAgo) {
+        const options = { weekday: 'short' };
+        return date.toLocaleDateString([], options);
+    }
+
+    // This year
+    if (date.getFullYear() === now.getFullYear()) {
+        const options = { month: 'short', day: 'numeric' };
+        return date.toLocaleDateString([], options);
+    }
+
+    // Older
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return date.toLocaleDateString([], options);
 }
 
 /**
@@ -173,11 +221,11 @@ function updateUnreadCount(conversationId) {
     console.log("updateUnreadCount for conversation", conversationId);
     // Find the conversation item in the list
     const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    
+
     if (conversationItem.length > 0) {
         // Check if there's already an unread badge
         let unreadBadge = conversationItem.find('.unread-badge');
-        
+
         if (unreadBadge.length === 0) {
             // Create badge if it doesn't exist
             conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
@@ -190,7 +238,7 @@ function updateUnreadCount(conversationId) {
         // If conversation not in the list (e.g., a new conversation), refresh the conversation list
         loadConversations();
     }
-    
+
     // Update total unread count in page title
     updatePageTitle();
 }
@@ -207,7 +255,7 @@ function clearUnreadBadge(conversationItem) {
         const conversationId = conversationItem.data('id');
         unreadBadge.remove();
         updatePageTitle();
-        
+
         // Remove this conversation from stored unread counts in session storage
         const storedCounts = sessionStorage.getItem('unreadCounts');
         if (storedCounts) {
@@ -231,12 +279,12 @@ window.clearUnreadBadge = clearUnreadBadge;
  */
 function updatePageTitle() {
     let totalUnread = 0;
-    
+
     // Count all unread messages across conversations
     $('.unread-badge').each(function() {
         totalUnread += parseInt($(this).text()) || 0;
     });
-    
+
     // Update page title
     if (totalUnread > 0) {
         document.title = `(${totalUnread}) Chat Application`;
@@ -266,7 +314,7 @@ function getAvatarInitial(name) {
  */
 function storeUnreadCounts() {
     const unreadCounts = {};
-    
+
     $('.conversation-item').each(function() {
         const id = $(this).data('id');
         const badge = $(this).find('.unread-badge');
@@ -274,7 +322,7 @@ function storeUnreadCounts() {
             unreadCounts[id] = badge.text();
         }
     });
-    
+
     if (Object.keys(unreadCounts).length > 0) {
         sessionStorage.setItem('unreadCounts', JSON.stringify(unreadCounts));
     }
@@ -290,17 +338,17 @@ function restoreUnreadCounts() {
     if (storedCounts) {
         try {
             const unreadCounts = JSON.parse(storedCounts);
-            
+
             for (const [id, count] of Object.entries(unreadCounts)) {
                 const conversationItem = $(`.conversation-item[data-id="${id}"]`);
                 if (conversationItem.length > 0) {
                     conversationItem.find('.conversation-info').append(`<div class="unread-badge">${count}</div>`);
                 }
             }
-            
+
             // Update the page title
             updatePageTitle();
-            
+
         } catch (e) {
             console.error('Error restoring unread counts:', e);
         }

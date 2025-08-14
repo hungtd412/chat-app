@@ -31,13 +31,8 @@ public class ConversationController {
 
     @GetMapping("/current-user")
     public ResponseEntity<ApiResponse<List<ConversationResponse>>> getCurrentUserConversations() {
-        List<Conversation> conversations = conversationService.getCurrentUserConversations();
-        User currentUser = userService.currentUser();
-        
-        List<ConversationResponse> conversationResponses = conversations.stream()
-                .map(conversation -> conversationService.enrichConversationWithFriendNameAngImage(conversation, currentUser.getId()))
-                .toList();
-                
+        List<ConversationResponse> conversationResponses = conversationService.getCurrentUserConversations();
+
         return ResponseEntity.ok(
                 ApiResponse.<List<ConversationResponse>>builder()
                         .data(conversationResponses)

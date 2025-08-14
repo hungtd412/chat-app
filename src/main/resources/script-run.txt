@@ -4,3 +4,4 @@ docker-compose up
 
 //enter redis cli
 docker exec -it chat-app-redis redis-cli
+KEYS *

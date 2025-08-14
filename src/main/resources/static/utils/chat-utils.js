@@ -4,7 +4,7 @@
  */
 
 // WebSocket Functions
-function getUsernameFromToken(token) {
+function getUserIdFromToken(token) {
     if (!token) return null;
 
     try {
@@ -16,9 +16,9 @@ function getUsernameFromToken(token) {
 
         // The second part contains the payload
         const payload = JSON.parse(atob(tokenParts[1]));
-        return payload.sub; // returning the username (subject)
+        return payload.sub; // returning the userId (subject)
     } catch (e) {
-        console.error('Error extracting username from token', e);
+        console.error('Error extracting userId from token', e);
         return null;
     }
 }
@@ -120,14 +120,14 @@ function appendNewMessage(message, messagesListId = 'messages-list') {
 
     const messageClass = isMine ? 'outgoing' : 'incoming';
     const content = message.content;
-    
+
     // Avatar display
-    const avatarHtml = !isMine ? 
+    const avatarHtml = !isMine ?
         `<div class="message-avatar">
-            ${message.senderAvtUrl ? 
-                `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` : 
-                `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
-            }
+            ${message.senderAvtUrl ?
+            `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` :
+            `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
+        }
          </div>` : '';
 
     const messageEl = $(`
@@ -165,17 +165,17 @@ function displayMessages(messages, messagesListId = 'messages-list') {
 
     let currentDate = '';
     let currentSenderId = null;
-    
+
     sortedMessages.forEach((message, index) => {
         const date = new Date(message.createdAt);
         const messageDate = formatDate(date);
         const isMine = message.belongCurrentUser;
         const messageClass = isMine ? 'outgoing' : 'incoming';
         const timeString = formatTime(date);
-        
+
         // Check if we should show the avatar (only for first message in a sequence from same sender)
         const showAvatar = !isMine && (message.senderId !== currentSenderId);
-        
+
         // Add date divider if this is a new date
         if (messageDate !== currentDate) {
             currentDate = messageDate;
@@ -185,20 +185,20 @@ function displayMessages(messages, messagesListId = 'messages-list') {
                 </div>
             `);
         }
-        
+
         // Avatar display
-        const avatarHtml = !isMine && showAvatar ? 
+        const avatarHtml = !isMine && showAvatar ?
             `<div class="message-avatar">
-                ${message.senderAvtUrl ? 
-                    `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` : 
-                    `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
-                }
-             </div>` : 
+                ${message.senderAvtUrl ?
+                `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` :
+                `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
+            }
+             </div>` :
             (!isMine ? '<div class="message-avatar-spacer"></div>' : '');
-        
+
         // Show sender name only for the first message in a group from the same sender
         const showSenderName = !isMine && (message.senderId !== currentSenderId);
-        
+
         const messageEl = $(`
             <div class="message ${messageClass}${showAvatar ? '' : ' subsequent-message'}">
                 ${avatarHtml}
@@ -248,12 +248,18 @@ function loadMessages(conversationId, messagesListId = 'messages-list') {
     });
 }
 
-// WebSocket Functions
+/**
+ * Sends a message via WebSocket
+ * @param {number} conversationId - The ID of the conversation to send the message to
+ * @param {object} stompClient - The STOMP client instance
+ * @param {string} messageInputId - The ID of the message input element
+ * @returns {boolean} Whether the message was sent successfully
+ */
 function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
     const messageInput = $(`#${messageInputId}`);
     const messageText = messageInput.val().trim();
 
-    if (!messageText) return;
+    if (!messageText) return false;
 
     // Clear input before sending to make UI more responsive
     messageInput.val('');
@@ -272,11 +278,30 @@ function sendMessage(conversationId, stompClient, messageInputId = 'message-inpu
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         };
 
+        // Move the conversation to the top when sending a message
+        if (typeof window.moveConversationToTop === 'function') {
+            window.moveConversationToTop(conversationId);
+        }
+        
+        // Also update the latest message preview in the conversation list
+        // with a truncated version if it's too long
+        const previewText = messageText.length > 30 
+            ? messageText.substring(0, 30) + '...' 
+            : messageText;
+            
+        // Use current timestamp for immediate feedback
+        const now = new Date().toISOString();
+        if (typeof window.updateLatestMessage === 'function') {
+            window.updateLatestMessage(conversationId, previewText, now);
+        }
+
         stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+        return true;
     } else {
         console.error('WebSocket not connected, cannot send message');
         alert('Connection error. Please refresh the page and try again.');
         messageInput.val(messageText); // Restore the message text
+        return false;
     }
 }
 
@@ -293,11 +318,11 @@ function updateUnreadCountUtil(conversationId, increment = true) {
     }
 
     const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    
+
     if (conversationItem.length > 0) {
         // Check if there's already an unread badge
         let unreadBadge = conversationItem.find('.unread-badge');
-        
+
         if (increment) {
             if (unreadBadge.length === 0) {
                 // Create badge if it doesn't exist
@@ -313,7 +338,7 @@ function updateUnreadCountUtil(conversationId, increment = true) {
                 unreadBadge.remove();
             }
         }
-        
+
         // Update title if available
         if (typeof window.updatePageTitle === 'function') {
             window.updatePageTitle();
@@ -328,3 +353,32 @@ function updateUnreadCountUtil(conversationId, increment = true) {
 function clearUnreadBadgeUtil(conversationId) {
     updateUnreadCountUtil(conversationId, false);
 }
+
+/**
+ * Updates the latest message display for a conversation in the list
+ * @param {number} conversationId - The ID of the conversation to update
+ * @param {string} message - The new latest message text
+ * @param {string} timestamp - The timestamp of the message
+ */
+function updateLatestMessage(conversationId, message, timestamp) {
+    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationItem.length > 0) {
+        // Update latest message text
+        const latestMessageElement = conversationItem.find('.latest-message');
+        if (latestMessageElement.length > 0) {
+            latestMessageElement.text(message);
+        }
+
+        // Update timestamp
+        const timeElement = conversationItem.find('.message-time');
+        if (timeElement.length > 0 && timestamp) {
+            timeElement.text(formatTimestamp(timestamp));
+        }
+
+        console.log(`Updated latest message for conversation ${conversationId}`);
+    }
+}
+
+// Make functions available globally
+window.sendMessage = sendMessage;
+window.updateLatestMessage = updateLatestMessage;

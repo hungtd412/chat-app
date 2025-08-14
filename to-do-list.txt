@@ -1,3 +1,0 @@
-1. send and receive message via websocket
-2. hash message content
-3. online status

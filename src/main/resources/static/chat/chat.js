@@ -186,3 +186,47 @@ function loadChatInContainer(container, conversationId, conversationType, displa
         `);
     });
 }
+
+function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
+    const messageInput = $(`#${messageInputId}`);
+    const messageText = messageInput.val().trim();
+
+    if (!messageText) return;
+
+    // Clear input before sending to make UI more responsive
+    messageInput.val('');
+
+    // Check if we can use WebSocket
+    if (stompClient && stompClient.connected) {
+        console.log('Sending message via WebSocket');
+        const message = {
+            conversationId: conversationId,
+            type: 'TEXT',
+            content: messageText
+        };
+
+        // Add authorization headers when sending the message
+        const headers = {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        };
+
+        // Move the conversation to the top when sending a message
+        moveConversationToTop(conversationId);
+        
+        // Also update the latest message preview in the conversation list
+        // with a truncated version if it's too long
+        const previewText = messageText.length > 30 
+            ? messageText.substring(0, 30) + '...' 
+            : messageText;
+            
+        // Use current timestamp for immediate feedback
+        const now = new Date().toISOString();
+        updateLatestMessage(conversationId, previewText, now);
+
+        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    } else {
+        console.error('WebSocket not connected, cannot send message');
+        alert('Connection error. Please refresh the page and try again.');
+        messageInput.val(messageText); // Restore the message text
+    }
+}

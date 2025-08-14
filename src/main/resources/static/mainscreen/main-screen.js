@@ -158,6 +158,16 @@ function onMessageReceived(payload) {
 
         // Move conversation to top regardless of whether it's active or not
         moveConversationToTop(conversationId);
+        
+        // Update the latest message in the conversation list
+        if (message.content) {
+            // Truncate message if it's too long for preview
+            const previewText = message.content.length > 30 
+                ? message.content.substring(0, 30) + '...' 
+                : message.content;
+            
+            updateLatestMessage(conversationId, previewText, message.createdAt);
+        }
 
         // Check if we're currently viewing this conversation
         const activeConversationId = $('#chat-frame').data('conversation-id');

@@ -11,6 +11,8 @@ import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.repository.UserRepository;
 import com.hungtd.chatapp.service.auth.AuthenticationService;
+import com.hungtd.chatapp.service.auth.JwtService;
+import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import com.nimbusds.jose.JOSEException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -28,15 +30,15 @@ import java.text.ParseException;
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
 
-    JwtServiceImpl jwtServiceImpl;
-    TokenBlacklistServiceImpl tokenBlacklistServiceImpl;
+    JwtService jwtService;
+    TokenBlacklistService tokenBlacklistService;
     UserRepository userRepository;
 
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         boolean isValid = true;
 
         try {
-            jwtServiceImpl.verifyToken(request.getToken()); // will throw error if invalid token
+            jwtService.verifyToken(request.getToken()); // will throw error if invalid token
         } catch (AppException appException) {
             isValid = false;
         }
@@ -58,8 +60,8 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
 
         // Generate both access token and refresh token
-        String accessToken = jwtServiceImpl.generateAccessToken(user);
-        String refreshToken = jwtServiceImpl.generateRefreshToken(user);
+        String accessToken = jwtService.generateAccessToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
 
         return AuthenticationResponse.builder()
                 .accessToken(accessToken)
@@ -77,10 +79,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (accessToken != null && !accessToken.isEmpty()) {
                 try {
                     // Don't verify against blacklist - just get expiration time
-                    Long accessTokenExpiryMs = jwtServiceImpl.getTokenExpirationTime(accessToken);
+                    Long accessTokenExpiryMs = jwtService.getTokenExpirationTime(accessToken);
                     if (accessTokenExpiryMs != null) {
                         // Blacklist the access token
-                        tokenBlacklistServiceImpl.blacklistToken(accessToken, accessTokenExpiryMs);
+                        tokenBlacklistService.blacklistToken(accessToken, accessTokenExpiryMs);
                         log.info("Access token blacklisted successfully");
                     }
                 } catch (Exception e) {
@@ -92,10 +94,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             if (refreshToken != null && !refreshToken.isEmpty()) {
                 try {
                     // Get expiration time for refresh token
-                    Long refreshTokenExpiryMs = jwtServiceImpl.getTokenExpirationTime(refreshToken);
+                    Long refreshTokenExpiryMs = jwtService.getTokenExpirationTime(refreshToken);
                     if (refreshTokenExpiryMs != null) {
                         // Blacklist the refresh token
-                        tokenBlacklistServiceImpl.blacklistToken(refreshToken, refreshTokenExpiryMs);
+                        tokenBlacklistService.blacklistToken(refreshToken, refreshTokenExpiryMs);
                         log.info("Refresh token blacklisted successfully");
                     }
                 } catch (Exception e) {
@@ -113,12 +115,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         
         try {
             // First, validate refresh token (this will throw exception if invalid)
-            jwtServiceImpl.verifyRefreshToken(refreshToken);
+            jwtService.verifyRefreshToken(refreshToken);
             
             // If we get here, refresh token is valid, now validate the structure of access token 
             // (but don't error on blacklisted/expired)
             try {
-                jwtServiceImpl.verifyToken(accessToken);
+                jwtService.verifyToken(accessToken);
             } catch (AppException e) {
                 // Only proceed if the token was blacklisted or expired
                 if (e.getErrorCode() != ErrorCode.UNAUTHENTICATED && 
@@ -128,18 +130,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
             }
             
             // Blacklist the old access token regardless of its validity
-            Long accessTokenExpiryMs = jwtServiceImpl.getTokenExpirationTime(accessToken);
+            Long accessTokenExpiryMs = jwtService.getTokenExpirationTime(accessToken);
             if (accessTokenExpiryMs != null) {
-                tokenBlacklistServiceImpl.blacklistToken(accessToken, accessTokenExpiryMs);
+                tokenBlacklistService.blacklistToken(accessToken, accessTokenExpiryMs);
             }
             
             // Get username from refresh token and generate a new access token
-            String username = jwtServiceImpl.verifyRefreshToken(refreshToken).getJWTClaimsSet().getSubject();
+            String username = jwtService.verifyRefreshToken(refreshToken).getJWTClaimsSet().getSubject();
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
             
             // Generate new access token
-            String newAccessToken = jwtServiceImpl.generateAccessToken(user);
+            String newAccessToken = jwtService.generateAccessToken(user);
             
             return AuthenticationResponse.builder()
                     .accessToken(newAccessToken)

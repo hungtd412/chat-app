@@ -4,6 +4,7 @@ import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.service.auth.JwtService;
+import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;
@@ -41,9 +42,10 @@ public class JwtServiceImpl implements JwtService {
     private static final String ACCESS_TOKEN = "access";
     private static final String REFRESH_TOKEN = "refresh";
 
-    TokenBlacklistServiceImpl tokenBlacklistServiceImpl;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // Generate an access token with short expiration (1 hour)
+    @Override
     public String generateAccessToken(User user) {
         return generateJwtToken(user, ACCESS_TOKEN, 1, ChronoUnit.HOURS);
     }
@@ -92,7 +94,7 @@ public class JwtServiceImpl implements JwtService {
                 throw new AppException(ErrorCode.INVALID_KEY);
             }
 
-            if (tokenBlacklistServiceImpl.isBlacklisted(token)) {
+            if (tokenBlacklistService.isBlacklisted(token)) {
                 throw new AppException(ErrorCode.UNAUTHENTICATED);
             }
 

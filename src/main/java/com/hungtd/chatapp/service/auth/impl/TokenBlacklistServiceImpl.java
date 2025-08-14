@@ -1,6 +1,5 @@
 package com.hungtd.chatapp.service.auth.impl;
 
-import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -12,7 +11,7 @@ import java.util.concurrent.TimeUnit;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class TokenBlacklistServiceImpl implements TokenBlacklistService {
+public class TokenBlacklistServiceImpl implements com.hungtd.chatapp.service.auth.TokenBlacklistService {
     // Using Redis for distributed token blacklisting
     RedisTemplate<String, String> redisTemplate;  // Spring's RedisTemplate to interact with Redis database
 

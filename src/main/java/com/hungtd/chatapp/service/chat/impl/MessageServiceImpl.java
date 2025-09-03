@@ -34,14 +34,10 @@ public class MessageServiceImpl implements MessageService {
     WebSocketService webSocketService;
 
     @Override
-    public List<Message> getMessagesByConversationId(Long conversationId) {
-//        if (!conversationService.isExistById(conversationId)) {
-//            throw new AppException(ErrorCode.CONVERSATION_NOT_FOUND);
-//        }
-
+    public List<Message> getMessagesByConversationId(Long conversationId, Long offset, Long limit) {
         conversationService.validateUserInConversation(conversationId, userService.currentUser().getId());
 
-        return messageRepository.findAllByConversationIdOrderByIdDesc(conversationId);
+        return messageRepository.findAllByConversationIdOrderByIdDesc(conversationId, offset, limit);
     }
 
     public List<MessageResponse> toMessageResponseList(List<Message> messageList) {

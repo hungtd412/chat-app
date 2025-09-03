@@ -231,7 +231,10 @@ function getAvatarInitial(name) {
 // API Functions
 function loadMessages(conversationId, messagesListId = 'messages-list') {
     $(`#${messagesListId}`).html('<div class="loading-messages">Loading messages...</div>');
-
+    
+    // Store the conversation ID globally for message handling
+    window.currentConversationId = conversationId;
+    
     return $.ajax({
         url: `http://localhost:9000/messages/conversation/${conversationId}`,
         type: 'GET',
@@ -239,146 +242,279 @@ function loadMessages(conversationId, messagesListId = 'messages-list') {
             'Authorization': 'Bearer ' + localStorage.getItem('access_token')
         },
         success: function(response) {
-            displayMessages(response.data, messagesListId);
+            console.log(`Loaded ${response.data ? response.data.length : 0} initial messages`);
+            
+            // Remove any loading indicators
+            $(`#${messagesListId} .loading-messages, #${messagesListId} .loading-more-messages`).remove();
+            
+            if (response.data && response.data.length > 0) {
+                displayMessages(response.data, messagesListId);
+                
+                // Store the oldest message ID for pagination
+                const oldestMessage = [...response.data].sort((a, b) => a.id - b.id)[0];
+                window.oldestMessageId = oldestMessage.id;
+                console.log(`Initial oldest message ID: ${window.oldestMessageId}`);
+                
+                // Add scroll handler to load more messages
+                setupScrollHandler(messagesListId);
+                
+                // Store whether there might be more messages
+                window.hasMoreMessages = response.data.length >= 15; // 15 is default limit
+            } else {
+                $(`#${messagesListId}`).html('<div class="empty-messages">No messages yet</div>');
+                window.hasMoreMessages = false;
+            }
         },
         error: function(xhr, status, error) {
-            console.error('Error loading messages:', error);
-            $(`#${messagesListId}`).html('<div class="error-messages">Error loading messages. Please try again later.</div>');
+            console.error('Error loading messages:', xhr.status, error);
+            $(`#${messagesListId}`).html(
+                '<div class="error-messages">Error loading messages. Please try again later.</div>'
+            );
         }
     });
 }
 
 /**
- * Sends a message via WebSocket
- * @param {number} conversationId - The ID of the conversation to send the message to
- * @param {object} stompClient - The STOMP client instance
- * @param {string} messageInputId - The ID of the message input element
- * @returns {boolean} Whether the message was sent successfully
+ * Loads more messages with pagination
+ * @param {number} conversationId - The conversation ID
+ * @param {number} offset - The message ID to start from (0 means start from the most recent)
+ * @param {string} messagesListId - The ID of the messages list element
  */
-function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
-    const messageInput = $(`#${messageInputId}`);
-    const messageText = messageInput.val().trim();
-
-    if (!messageText) return false;
-
-    // Clear input before sending to make UI more responsive
-    messageInput.val('');
-
-    // Check if we can use WebSocket
-    if (stompClient && stompClient.connected) {
-        console.log('Sending message via WebSocket');
-        const message = {
-            conversationId: conversationId,
-            type: 'TEXT',
-            content: messageText
-        };
-
-        // Add authorization headers when sending the message
-        const headers = {
-            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
-        };
-
-        // Move the conversation to the top when sending a message
-        if (typeof window.moveConversationToTop === 'function') {
-            window.moveConversationToTop(conversationId);
-        }
-        
-        // Also update the latest message preview in the conversation list
-        // with a truncated version if it's too long
-        const previewText = messageText.length > 30 
-            ? messageText.substring(0, 30) + '...' 
-            : messageText;
-            
-        // Use current timestamp for immediate feedback
-        const now = new Date().toISOString();
-        if (typeof window.updateLatestMessage === 'function') {
-            window.updateLatestMessage(conversationId, previewText, now);
-        }
-
-        stompClient.send("/app/chat.send", headers, JSON.stringify(message));
-        return true;
-    } else {
-        console.error('WebSocket not connected, cannot send message');
-        alert('Connection error. Please refresh the page and try again.');
-        messageInput.val(messageText); // Restore the message text
-        return false;
+function loadMoreMessages(conversationId, offset = 0, messagesListId = 'messages-list') {
+    // If we're already loading messages, don't start another request
+    if (window.isLoadingMore) {
+        console.log("Already loading messages, skipping request");
+        return;
     }
+    
+    // Set flag to prevent multiple simultaneous loads
+    window.isLoadingMore = true;
+    console.log(`Loading more messages for conversation ${conversationId} with offset ${offset}`);
+    
+    // Add loading indicator at the top
+    $(`#${messagesListId}`).prepend('<div class="loading-more-messages">Loading more messages...</div>');
+    
+    $.ajax({
+        url: `http://localhost:9000/messages/conversation/${conversationId}?offset=${offset}`,
+        type: 'GET',
+        headers: {
+            'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+        },
+        success: function(response) {
+            console.log(`Loaded ${response.data ? response.data.length : 0} more messages`);
+            
+            // Remove loading indicators
+            $(`#${messagesListId} .loading-more-messages`).remove();
+            
+            if (response.data && response.data.length > 0) {
+                // Append older messages to the top
+                appendOlderMessages(response.data, messagesListId);
+                
+                // Update the oldest message ID
+                if (response.data.length > 0) {
+                    const oldestMessage = [...response.data].sort((a, b) => a.id - b.id)[0];
+                    window.oldestMessageId = oldestMessage.id;
+                    console.log(`New oldest message ID: ${window.oldestMessageId}`);
+                }
+                
+                // Store whether there might be more messages
+                window.hasMoreMessages = response.data.length >= 15; // 15 is default limit
+            } else {
+                console.log("No more messages to load");
+                window.hasMoreMessages = false;
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading more messages:', xhr.status, error);
+            $(`#${messagesListId} .loading-more-messages`).remove();
+            $(`#${messagesListId}`).prepend(
+                '<div class="error-more-messages">Failed to load more messages. Try again later.</div>'
+            );
+            // Remove the error after 3 seconds
+            setTimeout(() => {
+                $(`#${messagesListId} .error-more-messages`).fadeOut(() => {
+                    $(`#${messagesListId} .error-more-messages`).remove();
+                });
+            }, 3000);
+        },
+        complete: function() {
+            // Reset loading flag
+            window.isLoadingMore = false;
+            console.log("Message loading complete, ready for more scrolling");
+        }
+    });
 }
 
 /**
- * Updates the unread count for a conversation
- * @param {number} conversationId - The ID of the conversation
- * @param {boolean} increment - Whether to increment or clear the badge
+ * Appends older messages to the top of the messages list
+ * @param {Array} messages - The messages to append
+ * @param {string} messagesListId - The ID of the messages list element
  */
-function updateUnreadCountUtil(conversationId, increment = true) {
-    // If mainscreen's updateUnreadCount exists, use it
-    if (typeof window.updateUnreadCount === 'function') {
-        window.updateUnreadCount(conversationId);
+function appendOlderMessages(messages, messagesListId = 'messages-list') {
+    if (!messages || messages.length === 0) {
         return;
     }
 
-    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
+    // Sort messages by id in ascending order (oldest first)
+    const sortedMessages = [...messages].sort((a, b) => a.id - b.id);
+    
+    const messagesListEl = $(`#${messagesListId}`);
+    
+    // Get the current scroll position before adding content
+    const messagesContainer = messagesListEl.closest('.messages-container');
+    const oldScrollHeight = messagesContainer.prop('scrollHeight');
+    const oldScrollTop = messagesContainer.scrollTop();
+    
+    let currentDate = '';
+    let html = '';
+    
+    sortedMessages.forEach(message => {
+        const date = new Date(message.createdAt);
+        const messageDate = formatDate(date);
+        const isMine = message.belongCurrentUser;
+        const messageClass = isMine ? 'outgoing' : 'incoming';
+        const timeString = formatTime(date);
+        
+        // Add date divider if this is a new date
+        if (messageDate !== currentDate) {
+            // Check if this date divider already exists
+            const existingDivider = messagesListEl.find(`.date-divider span:contains("${messageDate}")`);
+            if (existingDivider.length === 0) {
+                html += `
+                    <div class="date-divider">
+                        <span>${messageDate}</span>
+                    </div>
+                `;
+            }
+            currentDate = messageDate;
+        }
+        
+        // Avatar display
+        const avatarHtml = !isMine ?
+            `<div class="message-avatar">
+                ${message.senderAvtUrl ?
+                `<img src="${message.senderAvtUrl}" alt="${message.senderName || 'User'}" />` :
+                `<div class="avatar-placeholder">${getAvatarInitial(message.senderName)}</div>`
+            }
+             </div>` : '';
+        
+        html += `
+            <div class="message ${messageClass}">
+                ${avatarHtml}
+                <div class="message-bubble">
+                    ${!isMine ? `<div class="message-sender">${message.senderName || 'User'}</div>` : ''}
+                    <div class="message-content">${escapeHtml(message.content)}</div>
+                    <div class="message-time">${timeString}</div>
+                </div>
+            </div>
+        `;
+    });
+    
+    // Prepend the HTML to the messages list
+    messagesListEl.prepend(html);
+    
+    // Maintain scroll position after adding content
+    const newScrollHeight = messagesContainer.prop('scrollHeight');
+    messagesContainer.scrollTop(oldScrollTop + (newScrollHeight - oldScrollHeight));
+}
 
-    if (conversationItem.length > 0) {
-        // Check if there's already an unread badge
-        let unreadBadge = conversationItem.find('.unread-badge');
-
-        if (increment) {
-            if (unreadBadge.length === 0) {
-                // Create badge if it doesn't exist
-                conversationItem.find('.conversation-info').append('<div class="unread-badge">1</div>');
+/**
+ * Sets up a scroll handler to load more messages when scrolling to the top
+ * @param {string} messagesListId - The ID of the messages list element
+ */
+function setupScrollHandler(messagesListId = 'messages-list') {
+    const messagesContainer = $(`#${messagesListId}`).closest('.messages-container');
+    
+    // Remove any existing scroll handlers first
+    messagesContainer.off('scroll.loadMore');
+    
+    // Add scroll handler
+    messagesContainer.on('scroll.loadMore', function() {
+        // If we're near the top (within 50px) and we have more messages to load
+        if (messagesContainer.scrollTop() < 50 && window.hasMoreMessages && !window.isLoadingMore) {
+            console.log("Near top of container, loading more messages...");
+            
+            // Load more messages, starting from the oldest message ID
+            if (window.currentConversationId && window.oldestMessageId) {
+                loadMoreMessages(window.currentConversationId, window.oldestMessageId, messagesListId);
             } else {
-                // Update existing badge
-                const currentCount = parseInt(unreadBadge.text()) || 0;
-                unreadBadge.text(currentCount + 1);
-            }
-        } else {
-            // Clear badge
-            if (unreadBadge.length > 0) {
-                unreadBadge.remove();
+                console.error("Cannot load more messages: missing conversation ID or oldest message ID");
             }
         }
+    });
 
-        // Update title if available
-        if (typeof window.updatePageTitle === 'function') {
-            window.updatePageTitle();
-        }
-    }
-}
-
-/**
- * Clears the unread badge for a conversation
- * @param {number} conversationId - The ID of the conversation
- */
-function clearUnreadBadgeUtil(conversationId) {
-    updateUnreadCountUtil(conversationId, false);
-}
-
-/**
- * Updates the latest message display for a conversation in the list
- * @param {number} conversationId - The ID of the conversation to update
- * @param {string} message - The new latest message text
- * @param {string} timestamp - The timestamp of the message
- */
-function updateLatestMessage(conversationId, message, timestamp) {
-    const conversationItem = $(`.conversation-item[data-id="${conversationId}"]`);
-    if (conversationItem.length > 0) {
-        // Update latest message text
-        const latestMessageElement = conversationItem.find('.latest-message');
-        if (latestMessageElement.length > 0) {
-            latestMessageElement.text(message);
-        }
-
-        // Update timestamp
-        const timeElement = conversationItem.find('.message-time');
-        if (timeElement.length > 0 && timestamp) {
-            timeElement.text(formatTimestamp(timestamp));
-        }
-
-        console.log(`Updated latest message for conversation ${conversationId}`);
-    }
+    // Debug logging for scroll position
+    messagesContainer.on('scroll', function() {
+        console.log(`Scroll position: ${messagesContainer.scrollTop()}, Container height: ${messagesContainer.height()}, ScrollHeight: ${messagesContainer.prop('scrollHeight')}`);
+    });
 }
 
 // Make functions available globally
 window.sendMessage = sendMessage;
 window.updateLatestMessage = updateLatestMessage;
+window.loadMoreMessages = loadMoreMessages;
+window.setupScrollHandler = setupScrollHandler;
+
+// Make sendMessage function available - it seems to be missing
+function sendMessage(conversationId, stompClient, messageInputId = 'message-input') {
+    const messageInput = $(`#${messageInputId}`);
+    const content = messageInput.val().trim();
+    
+    if (!content) return; // Don't send empty messages
+    
+    if (!stompClient || !stompClient.connected) {
+        console.error("WebSocket connection not available");
+        return;
+    }
+    
+    const message = {
+        conversationId: conversationId,
+        content: content,
+        type: 'TEXT'
+    };
+    
+    console.log('Sending message via WebSocket:', message);
+    
+    // Include auth token in headers
+    const headers = {
+        'Authorization': 'Bearer ' + localStorage.getItem('access_token')
+    };
+    
+    stompClient.send("/app/chat.send", headers, JSON.stringify(message));
+    
+    // Clear input field
+    messageInput.val('');
+}
+
+// Add missing updateLatestMessage function
+function updateLatestMessage(conversationId, message) {
+    const conversationElement = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationElement.length === 0) return;
+    
+    // Update latest message text
+    const latestMessageEl = conversationElement.find('.conversation-latest-message');
+    if (latestMessageEl.length) {
+        latestMessageEl.text(message.content);
+    }
+    
+    // Update timestamp
+    const timeEl = conversationElement.find('.conversation-time');
+    if (timeEl.length) {
+        const date = new Date(message.createdAt || new Date());
+        timeEl.text(formatTime(date));
+    }
+    
+    // Move conversation to top of list
+    moveConversationToTop(conversationId);
+}
+
+// Define moveConversationToTop if not elsewhere defined
+function moveConversationToTop(conversationId) {
+    const conversationElement = $(`.conversation-item[data-id="${conversationId}"]`);
+    if (conversationElement.length === 0) return;
+    
+    const conversationsList = conversationElement.parent();
+    // Detach and prepend the conversation to move it to the top
+    conversationElement.detach();
+    conversationsList.prepend(conversationElement);
+}

@@ -22,7 +22,7 @@ import java.util.List;
 
 @Slf4j
 @RestController
-@RequestMapping("messages")
+@RequestMapping("/messages")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class MessageController {
@@ -31,15 +31,20 @@ public class MessageController {
 
     @GetMapping("/conversation/{conversationId}")
     public ResponseEntity<ApiResponse<List<MessageResponse>>> getMessagesByConversationId(
-            @PathVariable Long conversationId) {
-        log.debug("Retrieving messages for conversation: {}", conversationId);
-        
+            @PathVariable Long conversationId,
+            @RequestParam(defaultValue = "0") Long offset,
+            @RequestParam(defaultValue = "15") Long limit
+    ) {
+        log.debug("Retrieving messages for conversation: {} with offset: {} and limit: {}", 
+                conversationId, offset, limit);
+
         // Get messages from service
-        List<Message> messages = messageService.getMessagesByConversationId(conversationId);
+        List<Message> messages = messageService.getMessagesByConversationId(conversationId,
+                offset, limit);
 
         // Add sender name and avatar for display
         List<MessageResponse> messageResponses = messageService.toMessageResponseList(messages);
-        
+
         return ResponseEntity.ok(
                 ApiResponse.<List<MessageResponse>>builder()
                         .data(messageResponses)

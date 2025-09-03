@@ -14,7 +14,7 @@ public interface MessageService {
      * @param conversationId the ID of the conversation
      * @return list of messages ordered by ID (newest first)
      */
-    List<Message> getMessagesByConversationId(Long conversationId);
+    List<Message> getMessagesByConversationId(Long conversationId, Long offset, Long limit);
 
 
     List<MessageResponse> toMessageResponseList(List<Message> messageList);

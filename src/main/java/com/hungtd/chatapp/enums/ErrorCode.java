@@ -75,6 +75,7 @@ public enum ErrorCode {
     MIN_CONVERSATION_TITLE_LENGTH(1089, "Tên cuộc hội thoại phải có ít nhất 1 ký tự!", 400),
     MAX_CONVERSATION_TITLE_LENGTH(1090, "Tên cuộc hội thoại không được vượt quá 50 ký tự!", 400),
     GROUP_CONVERSATION_TYPE_REQUIRED(1091, "Yêu cầu cuộc hội thoại nhóm!", 400),
+    EMPTY_OFFSET(1092, "Offset không được để trống!", 400),
 
 
     //UPLOAD FILE 200X

@@ -1,41 +1,93 @@
 {
   "data" : [ {
-    "id" : 8,
-    "title" : "Nhóm bạn thân",
-    "type" : "GROUP",
-    "imageUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png",
-    "latestMessage" : "a",
-    "createdAt" : "2025-08-07T14:28:41.287+00:00"
+    "id" : 159,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "a",
+    "createdAt" : "2025-08-14T15:19:51.738189",
+    "belongCurrentUser" : true
   }, {
-    "id" : 1,
-    "title" : "",
-    "type" : "PRIVATE",
-    "friendName" : "Hùng Trần",
-    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-    "latestMessage" : "asas",
-    "createdAt" : "2025-08-07T14:27:53.664+00:00"
+    "id" : 158,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "ok",
+    "createdAt" : "2025-08-14T15:19:43.823886",
+    "belongCurrentUser" : true
   }, {
-    "id" : 6,
-    "title" : "",
-    "type" : "PRIVATE",
-    "friendName" : "Vinh Trần",
-    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-    "latestMessage" : "Mình đang làm việc trên dự án này.",
-    "createdAt" : "2025-07-26T05:21:38.274+00:00"
+    "id" : 140,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "ko",
+    "createdAt" : "2025-08-14T14:53:48.645813",
+    "belongCurrentUser" : true
   }, {
-    "id" : 9,
-    "title" : "Bạn thân thiết",
-    "type" : "GROUP",
-    "imageUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1751256457/default_group_image_la4psw.png",
-    "latestMessage" : "Mình khỏe, cảm ơn vì đã hỏi thăm!",
-    "createdAt" : "2025-07-26T05:21:38.208+00:00"
+    "id" : 98,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "Ai có thể giúp mình vấn đề này được không?",
+    "createdAt" : "2025-07-26T12:21:38.324669",
+    "belongCurrentUser" : true
   }, {
-    "id" : 5,
-    "title" : "",
-    "type" : "PRIVATE",
-    "friendName" : "Thủy Nguyễn",
-    "avtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
-    "latestMessage" : "Tuần sau mình đi nghỉ mát.",
-    "createdAt" : "2025-07-26T05:21:38.183+00:00"
+    "id" : 97,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "Xin lỗi, mình không thể đến được.",
+    "createdAt" : "2025-07-26T12:21:38.323667",
+    "belongCurrentUser" : true
+  }, {
+    "id" : 96,
+    "conversationId" : 2,
+    "senderId" : 4,
+    "senderName" : "Thủy Nguyễn",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "type" : "TEXT",
+    "content" : "Mình đang làm việc trên dự án này.",
+    "createdAt" : "2025-07-26T12:21:38.322667",
+    "belongCurrentUser" : false
+  }, {
+    "id" : 95,
+    "conversationId" : 2,
+    "senderId" : 4,
+    "senderName" : "Thủy Nguyễn",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "type" : "TEXT",
+    "content" : "Chúc mừng thành tích của bạn!",
+    "createdAt" : "2025-07-26T12:21:38.322667",
+    "belongCurrentUser" : false
+  }, {
+    "id" : 94,
+    "conversationId" : 2,
+    "senderId" : 4,
+    "senderName" : "Thủy Nguyễn",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1749956764/default-avatar_nhpbje.jpg",
+    "type" : "TEXT",
+    "content" : "Ai có thể giúp mình vấn đề này được không?",
+    "createdAt" : "2025-07-26T12:21:38.321669",
+    "belongCurrentUser" : false
+  }, {
+    "id" : 93,
+    "conversationId" : 2,
+    "senderId" : 2,
+    "senderName" : "Hùng Trần",
+    "senderAvtUrl" : "https://res.cloudinary.com/da1zrkrmi/image/upload/v1755141907/chat-app/avatar/ts1fmdwdq4mtwmqd7xo9.png",
+    "type" : "TEXT",
+    "content" : "Xin chào mọi người!",
+    "createdAt" : "2025-07-26T12:21:38.32067",
+    "belongCurrentUser" : true
   } ]
 }

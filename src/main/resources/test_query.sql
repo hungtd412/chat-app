@@ -31,12 +31,15 @@ desc messages;
 
 SELECT *
 FROM messages m
-WHERE m.conversation_id = 2
+WHERE m.conversation_id = 1
   AND (
-    (160 > 0 AND m.id < 160)
-        OR (160 <= 0)
+    (0 > 0 AND m.id < 0)
+        OR (0 <= 0)
     )
 ORDER BY m.id DESC
-LIMIT 2
+LIMIT 2;
+
+SELECT *
+FROM messages m where m.id = 167;
 
 

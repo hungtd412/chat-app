@@ -7,6 +7,15 @@
             <h3 id="chat-title">Loading...</h3>
             <div class="status" id="status-text">Loading status...</div>
         </div>
+        <!-- Added group edit buttons that will only show for group chats -->
+        <div id="group-edit-buttons" class="group-edit-buttons" style="display: none;">
+            <button id="edit-group-title-btn" class="edit-group-btn" title="Edit group title">
+                <i class="fas fa-edit"></i>
+            </button>
+            <button id="edit-group-image-btn" class="edit-group-btn" title="Edit group image">
+                <i class="fas fa-image"></i>
+            </button>
+        </div>
     </div>
     <div class="messages-container">
         <div id="messages-list" class="messages-list">
@@ -19,5 +28,30 @@
         <button id="send-button">
             <i class="fas fa-paper-plane"></i>
         </button>
+    </div>
+</div>
+
+<!-- Add modal dialogs for editing group info -->
+<div id="edit-group-title-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Edit Group Title</h3>
+        <input type="text" id="group-title-input" placeholder="Enter new group title">
+        <div id="title-loading-status" class="loading-status" style="display: none;"></div>
+        <button id="save-group-title-btn">Save</button>
+    </div>
+</div>
+
+<div id="edit-group-image-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close-modal">&times;</span>
+        <h3>Edit Group Image</h3>
+        <div class="image-upload-container">
+            <input type="file" id="group-image-input" accept="image/*">
+            <label for="group-image-input" class="image-upload-label">Choose an image</label>
+            <div id="image-preview"></div>
+        </div>
+        <div id="image-loading-status" class="loading-status" style="display: none;"></div>
+        <button id="save-group-image-btn">Upload</button>
     </div>
 </div>

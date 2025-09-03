@@ -26,6 +26,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Objects;
@@ -135,7 +136,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
-    public Conversation updateGroupImg(Long conversationId, UploadImageRequest uploadImageRequest) {
+    public Conversation updateGroupImg(Long conversationId, MultipartFile image) {
         //validate current user is in the conversation
         validateUserInConversation(conversationId, userService.currentUser().getId());
 
@@ -145,7 +146,7 @@ public class ConversationServiceImpl implements ConversationService {
             throw new AppException(ErrorCode.GROUP_CONVERSATION_TYPE_REQUIRED);
         }
 
-        FileUploadUtil.assertAllowed(uploadImageRequest.getImage(), FileUploadUtil.IMAGE_PATTERN);
+        FileUploadUtil.assertAllowed(image, FileUploadUtil.IMAGE_PATTERN);
 
 
         if (StringUtils.isNotBlank(conversation.getCloudinaryImageId())
@@ -155,7 +156,7 @@ public class ConversationServiceImpl implements ConversationService {
             cloudinaryService.delete(conversation.getCloudinaryImageId());
         }
 
-        final CloudinaryResponse cloudinaryResponse = cloudinaryService.uploadFile(uploadImageRequest.getImage(), "group");
+        final CloudinaryResponse cloudinaryResponse = cloudinaryService.uploadFile(image, "group");
 
         conversation.setImageUrl(cloudinaryResponse.getUrl());
         conversation.setCloudinaryImageId(cloudinaryResponse.getPublicId());

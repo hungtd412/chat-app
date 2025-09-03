@@ -9,8 +9,8 @@ import com.hungtd.chatapp.exception.AppException;
 import com.hungtd.chatapp.mapper.MessageMapper;
 import com.hungtd.chatapp.repository.ParticipantRepository;
 import com.hungtd.chatapp.repository.UserRepository;
-import com.hungtd.chatapp.service.auth.JwtService;
 import com.hungtd.chatapp.service.websocket.WebSocketService;
+import com.hungtd.chatapp.util.JwtUtil;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class WebSocketServiceImpl implements WebSocketService {
 
-    JwtService jwtService;
+    JwtUtil jwtUtil;
     MessageMapper messageMapper;
     SimpMessagingTemplate messagingTemplate;
     ParticipantRepository participantRepository;
@@ -37,7 +37,7 @@ public class WebSocketServiceImpl implements WebSocketService {
 
     @Override
     public Long extractUserIdFromHeader(StompHeaderAccessor headerAccessor) {
-        return jwtService.extractUserIdByTokenStompHeader(headerAccessor);
+        return jwtUtil.extractUserIdByTokenStompHeader(headerAccessor);
     }
 
     @Override

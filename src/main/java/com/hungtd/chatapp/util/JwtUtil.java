@@ -1,9 +1,8 @@
-package com.hungtd.chatapp.service.auth.impl;
+package com.hungtd.chatapp.util;
 
 import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.enums.ErrorCode;
 import com.hungtd.chatapp.exception.AppException;
-import com.hungtd.chatapp.service.auth.JwtService;
 import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -32,7 +31,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @Slf4j
-public class JwtServiceImpl implements JwtService {
+public class JwtUtil {
     @NonFinal
     @Value("${jwt.signerKey}")
     private String SIGNER_KEY;
@@ -45,7 +44,6 @@ public class JwtServiceImpl implements JwtService {
     private final TokenBlacklistService tokenBlacklistService;
 
     // Generate an access token with short expiration (1 hour)
-    @Override
     public String generateAccessToken(User user) {
         return generateJwtToken(user, ACCESS_TOKEN, 1, ChronoUnit.HOURS);
     }
@@ -149,7 +147,6 @@ public class JwtServiceImpl implements JwtService {
         return rolesStringJoiner.toString();
     }
 
-    @Override
     public Long extractUserIdByTokenStompHeader(StompHeaderAccessor headerAccessor) {
         String token = extractTokenFromStompHeader(headerAccessor);
 

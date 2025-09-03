@@ -1,14 +1,11 @@
 package com.hungtd.chatapp.controller;
 
 import com.hungtd.chatapp.dto.request.UpdateGroupTitleRequest;
-import com.hungtd.chatapp.dto.request.UploadImageRequest;
 import com.hungtd.chatapp.dto.response.ApiResponse;
 import com.hungtd.chatapp.dto.response.ConversationResponse;
 import com.hungtd.chatapp.entity.Conversation;
-import com.hungtd.chatapp.entity.User;
 import com.hungtd.chatapp.mapper.ConversationMapper;
 import com.hungtd.chatapp.service.conversation.ConversationService;
-import com.hungtd.chatapp.service.user.UserService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
@@ -26,8 +23,7 @@ import java.util.List;
 public class ConversationController {
 
     ConversationService conversationService;
-    UserService userService;
-    private final ConversationMapper conversationMapper;
+    ConversationMapper conversationMapper;
 
     @GetMapping("/current-user")
     public ResponseEntity<ApiResponse<List<ConversationResponse>>> getCurrentUserConversations() {

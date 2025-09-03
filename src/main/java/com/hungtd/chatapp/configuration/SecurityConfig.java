@@ -49,7 +49,8 @@ public class SecurityConfig {
         httpSecurity.authorizeHttpRequests(requests -> requests
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
                 .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
-                .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/users").permitAll()
+//                .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
                 .anyRequest().authenticated()
         );
 

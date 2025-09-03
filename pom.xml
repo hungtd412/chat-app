@@ -109,6 +109,10 @@
             <version>2.3.4</version>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-messaging</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.cloudinary</groupId>
             <artifactId>cloudinary-http44</artifactId>
             <version>1.37.0</version>
@@ -140,7 +144,7 @@
                         <path>
                             <groupId>org.projectlombok</groupId>
                             <artifactId>lombok</artifactId>
-                            <version>${org.projectlombok.version}</version>
+                            <version>${oorg.projectlombok.version}</version>
                         </path>
                         <path>
                             <groupId>org.mapstruct</groupId>

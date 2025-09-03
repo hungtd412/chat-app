@@ -27,3 +27,16 @@ ORDER BY COALESCE(m.id, 0) DESC;
 desc messages;
 
 
+-- select messages from a specific message id(offset) backward
+
+SELECT *
+FROM messages m
+WHERE m.conversation_id = 2
+  AND (
+    (160 > 0 AND m.id < 160)
+        OR (160 <= 0)
+    )
+ORDER BY m.id DESC
+LIMIT 2
+
+

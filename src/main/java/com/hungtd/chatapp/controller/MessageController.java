@@ -50,7 +50,7 @@ public class MessageController {
     @MessageMapping("/chat.send")
     public void handleChatMessage(@Payload @Valid CreateMessageRequest createMessageRequest, StompHeaderAccessor headerAccessor) {
         log.debug("Handling chat message for conversation: {}", createMessageRequest.getConversationId());
-        Authentication name = SecurityContextHolder.getContext().getAuthentication();
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         messageService.processChatMessage(createMessageRequest, headerAccessor);
     }
 }

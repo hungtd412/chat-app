@@ -1,0 +1,6 @@
+create a markdown plan file about 
+current constraint, 
+pros and cons 
+of the implementation of jwt in that prj, 
+what it shoud be(for that, you should use github cli search on github about 10 repositories so that you can gain best practices)
+then plan in detail to refactor jwt related code for me

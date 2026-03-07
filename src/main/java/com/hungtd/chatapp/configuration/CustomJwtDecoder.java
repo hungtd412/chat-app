@@ -1,54 +1,64 @@
 package com.hungtd.chatapp.configuration;
 
-import com.hungtd.chatapp.dto.request.IntrospectRequest;
-import com.hungtd.chatapp.dto.response.IntrospectResponse;
-import com.hungtd.chatapp.service.auth.AuthenticationService;
-import com.hungtd.chatapp.service.auth.impl.AuthenticationServiceImpl;
+import com.hungtd.chatapp.enums.ErrorCode;
+import com.hungtd.chatapp.service.auth.TokenBlacklistService;
 import com.nimbusds.jose.JOSEException;
-import lombok.AccessLevel;
+import com.nimbusds.jose.JWSVerifier;
+import com.nimbusds.jose.crypto.MACVerifier;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import lombok.RequiredArgsConstructor;
-import lombok.experimental.FieldDefaults;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.stereotype.Component;
-import javax.crypto.spec.SecretKeySpec;
+
 import java.text.ParseException;
+import java.time.Instant;
 
 @Component
 @RequiredArgsConstructor
 public class CustomJwtDecoder implements JwtDecoder {
     @Value("${jwt.signerKey}")
-    private String SIGNER_KEY;
+    private String signerKey;
 
-    @Autowired
-    private AuthenticationService authenticationService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     @Override
     public Jwt decode(String token) throws JwtException {
         try {
-            IntrospectResponse result = authenticationService.introspect(IntrospectRequest.builder()
-                    .token(token)
-                    .build());
+            SignedJWT signedJWT = SignedJWT.parse(token);
+            JWSVerifier verifier = new MACVerifier(signerKey.getBytes());
 
-            if (!result.isValid()) {
-                throw new JwtException("INVALID_KEY");
+            if (!signedJWT.verify(verifier)) {
+                throw new JwtException(ErrorCode.INVALID_KEY.getMessage());
             }
-        } catch (JOSEException | ParseException e) {
-            throw new JwtException(e.getMessage());
+
+            JWTClaimsSet claimsSet = signedJWT.getJWTClaimsSet();
+            Instant expiresAt = claimsSet.getExpirationTime() != null
+                    ? claimsSet.getExpirationTime().toInstant()
+                    : null;
+
+            if (expiresAt == null || expiresAt.isBefore(Instant.now())) {
+                throw new JwtException(ErrorCode.INVALID_KEY.getMessage());
+            }
+
+            if (tokenBlacklistService.isBlacklisted(token)) {
+                throw new JwtException(ErrorCode.UNAUTHENTICATED.getMessage());
+            }
+
+            Instant issuedAt = claimsSet.getIssueTime() != null ? claimsSet.getIssueTime().toInstant() : null;
+
+            return new Jwt(
+                    token,
+                    issuedAt,
+                    expiresAt,
+                    signedJWT.getHeader().toJSONObject(),
+                    claimsSet.getClaims()
+            );
+        } catch (ParseException | JOSEException e) {
+            throw new JwtException(ErrorCode.INVALID_KEY.getMessage(), e);
         }
-
-        SecretKeySpec secretKeySpec = new SecretKeySpec(SIGNER_KEY.getBytes(), "HS512");
-
-        NimbusJwtDecoder nimbusJwtDecoder = NimbusJwtDecoder
-                .withSecretKey(secretKeySpec)
-                .macAlgorithm(MacAlgorithm.HS512)
-                .build();
-
-        return nimbusJwtDecoder.decode(token);
     }
 }

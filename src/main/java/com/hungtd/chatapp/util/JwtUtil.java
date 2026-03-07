@@ -23,7 +23,6 @@ import java.text.ParseException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Objects;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -61,8 +60,7 @@ public class JwtUtil {
                 .issuer("hung")
                 .issueTime(new Date())
                 .expirationTime(new Date(
-                        Instant.now().plus(amount, unit).toEpochMilli()
-                ))
+                        Instant.now().plus(amount, unit).toEpochMilli()))
                 .jwtID(UUID.randomUUID().toString())
                 .claim("scope", buildScope(user))
                 .claim(TOKEN_TYPE_CLAIM, tokenType) // Add token type claim
@@ -81,15 +79,13 @@ public class JwtUtil {
     }
 
     // Verify any token (access or refresh)
-    public SignedJWT verifyToken(String token) throws RuntimeException {
-        try {
-            JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
-            SignedJWT signedJWT = SignedJWT.parse(token);
-            boolean verified = signedJWT.verify(verifier);
-            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+    public SignedJWT verifyToken(String token) {
+        SignedJWT signedJWT = parseAndVerifySignature(token);
 
-            if (!(verified && expiryTime.after(new Date()))) {
-                throw new AppException(ErrorCode.INVALID_KEY);
+        try {
+            Date expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
+            if (expiryTime == null || !expiryTime.after(new Date())) {
+                throw new AppException(ErrorCode.SESSION_EXPIRED);
             }
 
             if (tokenBlacklistService.isBlacklisted(token)) {
@@ -97,31 +93,24 @@ public class JwtUtil {
             }
 
             return signedJWT;
-        } catch (JOSEException | ParseException e) {
-            throw new RuntimeException(e);
+        } catch (ParseException e) {
+            throw new AppException(ErrorCode.INVALID_KEY);
         }
     }
 
     // Specifically verify a refresh token
-    public SignedJWT verifyRefreshToken(String token) throws RuntimeException {
+    public SignedJWT verifyRefreshToken(String token) {
+        SignedJWT signedJWT = verifyToken(token);
+
         try {
-            // Step 1: First validate this is a valid token (checks signature, expiration, and blacklist status)
-            SignedJWT signedJWT = verifyToken(token);
-            
-            // Step 2: Extract the token type claim from the JWT payload
             String tokenType = (String) signedJWT.getJWTClaimsSet().getClaim(TOKEN_TYPE_CLAIM);
-            
-            // Step 3: Verify this is specifically a refresh token, not an access token
             if (!REFRESH_TOKEN.equals(tokenType)) {
-                // If token type is not "refresh", throw an exception - prevents using access tokens for refresh operations
                 throw new AppException(ErrorCode.INVALID_TOKEN_TYPE);
             }
-            
-            // Step 4: Return the validated refresh token for further processing
+
             return signedJWT;
         } catch (ParseException e) {
-            // Handle parsing errors (malformed JWT)
-            throw new RuntimeException(e);
+            throw new AppException(ErrorCode.INVALID_KEY);
         }
     }
 
@@ -150,13 +139,18 @@ public class JwtUtil {
     public Long extractUserIdByTokenStompHeader(StompHeaderAccessor headerAccessor) {
         String token = extractTokenFromStompHeader(headerAccessor);
 
-        String userId = extractUserIdFromToken(token);
+        try {
+            SignedJWT signedJWT = verifyToken(token);
+            String userId = signedJWT.getJWTClaimsSet().getSubject();
 
-        if (Objects.equals(userId, null)) {
+            if (userId == null) {
+                throw new AppException(ErrorCode.UNAUTHENTICATED);
+            }
+
+            return Long.parseLong(userId);
+        } catch (ParseException | NumberFormatException e) {
             throw new AppException(ErrorCode.UNAUTHENTICATED);
         }
-
-        return Long.parseLong(userId);
     }
 
     public String extractTokenFromStompHeader(StompHeaderAccessor headerAccessor) {
@@ -168,25 +162,18 @@ public class JwtUtil {
         }
     }
 
-    public String extractUserIdFromToken(String token) {
+    private SignedJWT parseAndVerifySignature(String token) {
         try {
-            String[] splitToken = token.split("\\.");
-            if (splitToken.length != 3) {
-                return null;
+            JWSVerifier verifier = new MACVerifier(SIGNER_KEY.getBytes());
+            SignedJWT signedJWT = SignedJWT.parse(token);
+
+            if (!signedJWT.verify(verifier)) {
+                throw new AppException(ErrorCode.INVALID_KEY);
             }
 
-            String payload = new String(java.util.Base64.getDecoder().decode(splitToken[1]));
-
-            if (payload.contains("\"sub\":\"")) {
-                int startIndex = payload.indexOf("\"sub\":\"") + 7;
-                int endIndex = payload.indexOf("\"", startIndex);
-                return payload.substring(startIndex, endIndex);
-            }
-
-            return null;
-        } catch (Exception e) {
-            log.error("Error extracting userId from token", e);
-            return null;
+            return signedJWT;
+        } catch (JOSEException | ParseException e) {
+            throw new AppException(ErrorCode.INVALID_KEY);
         }
     }
 }

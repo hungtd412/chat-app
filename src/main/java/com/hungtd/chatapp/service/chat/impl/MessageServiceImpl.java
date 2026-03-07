@@ -40,6 +40,7 @@ public class MessageServiceImpl implements MessageService {
         return messageRepository.findAllByConversationIdOrderByIdDesc(conversationId, offset, limit);
     }
 
+    @Override
     public List<MessageResponse> toMessageResponseList(List<Message> messageList) {
         Long currentUserId = userService.currentUser().getId();
 

@@ -48,6 +48,7 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity.authorizeHttpRequests(requests -> requests
                 .requestMatchers(PUBLIC_ENDPOINTS).permitAll()
+                .requestMatchers("/actuator/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/users").hasRole(Role.ADMIN.name())
                 .requestMatchers(HttpMethod.POST, "/users").permitAll()
 //                .requestMatchers(HttpMethod.GET, "/ws/**").permitAll()
@@ -57,6 +58,7 @@ public class SecurityConfig {
         httpSecurity.oauth2ResourceServer(oauth2 ->
                 oauth2.jwt(jwtConfigurer ->
                                 jwtConfigurer.decoder(customJwtDecoder)
+                                        .jwtAuthenticationConverter(jwtAuthenticationConverter())
                         )
                         .authenticationEntryPoint(new JwtAuthenticationEntryPoint())
         );

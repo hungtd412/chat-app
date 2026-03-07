@@ -1,12 +1,18 @@
 package com.hungtd.chatapp.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.MappedSuperclass;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -14,12 +20,21 @@ import java.time.LocalDateTime;
 @Setter
 @FieldDefaults(level = lombok.AccessLevel.PRIVATE)
 @MappedSuperclass
+@EntityListeners(AuditingEntityListener.class)
 public abstract class BaseEntity {
     @Column(name = "created_at", updatable = false)
-    @CreationTimestamp
+    @CreatedDate
     LocalDateTime createdAt;
 
+    @CreatedBy
+    @Column(updatable = false)
+    private String createdBy;
+
     @Column(name = "updated_at")
-    @UpdateTimestamp
+    @LastModifiedDate
     LocalDateTime updatedAt;
+
+    @LastModifiedBy
+    @Column(insertable = false)
+    private String updatedBy;
 }

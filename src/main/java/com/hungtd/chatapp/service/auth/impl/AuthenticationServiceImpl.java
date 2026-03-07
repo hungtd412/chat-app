@@ -23,6 +23,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.text.ParseException;
+import java.util.Optional;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -109,50 +110,49 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         }
     }
 
-    public AuthenticationResponse refreshToken(RefreshTokenRequest request){
-        String accessToken = request.getAccessToken();
-        String refreshToken = request.getRefreshToken();
-        
+    public AuthenticationResponse refreshToken(RefreshTokenRequest request) {
+        String accessToken = Optional.ofNullable(request.getAccessToken())
+                .filter(token -> !token.isBlank())
+                .orElseThrow(() -> new AppException(ErrorCode.EMPTY_ACCESSTOKEN));
+
+        String refreshToken = Optional.ofNullable(request.getRefreshToken())
+                .filter(token -> !token.isBlank())
+                .orElseThrow(() -> new AppException(ErrorCode.EMPTY_REFRESHTOKEN));
+
         try {
-            // First, validate refresh token (this will throw exception if invalid)
-            jwtUtil.verifyRefreshToken(refreshToken);
-            
-            // If we get here, refresh token is valid, now validate the structure of access token 
-            // (but don't error on blacklisted/expired)
+            var refreshJwt = jwtUtil.verifyRefreshToken(refreshToken);
+
             try {
                 jwtUtil.verifyToken(accessToken);
             } catch (AppException e) {
-                // Only proceed if the token was blacklisted or expired
-                if (e.getErrorCode() != ErrorCode.UNAUTHENTICATED && 
-                    e.getErrorCode() != ErrorCode.INVALID_KEY) {
+                if (e.getErrorCode() != ErrorCode.UNAUTHENTICATED
+                        && e.getErrorCode() != ErrorCode.SESSION_EXPIRED
+                        && e.getErrorCode() != ErrorCode.INVALID_KEY) {
                     throw e;
                 }
             }
-            
-            // Blacklist the old access token regardless of its validity
+
             Long accessTokenExpiryMs = jwtUtil.getTokenExpirationTime(accessToken);
             if (accessTokenExpiryMs != null) {
                 tokenBlacklistService.blacklistToken(accessToken, accessTokenExpiryMs);
             }
-            
-            // Get username from refresh token and generate a new access token
-            String username = jwtUtil.verifyRefreshToken(refreshToken).getJWTClaimsSet().getSubject();
-            User user = userRepository.findByUsername(username)
+
+            Long userId = Long.parseLong(refreshJwt.getJWTClaimsSet().getSubject());
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
-            
-            // Generate new access token
+
             String newAccessToken = jwtUtil.generateAccessToken(user);
-            
+
             return AuthenticationResponse.builder()
                     .accessToken(newAccessToken)
-                    .refreshToken(refreshToken) // Keep the same refresh token
+                    .refreshToken(refreshToken)
                     .authenticated(true)
                     .build();
-            
-        } catch (Exception e) {
-            // If refresh token is invalid or expired
+        } catch (AppException e) {
+            throw e;
+        } catch (ParseException | NumberFormatException e) {
             log.error("Error refreshing token: {}", e.getMessage());
-            throw new AppException(ErrorCode.SESSION_EXPIRED);
+            throw new AppException(ErrorCode.INVALID_KEY);
         }
     }
 }
